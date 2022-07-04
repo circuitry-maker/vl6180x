@@ -15,6 +15,7 @@ exclude = []
 embedded-hal = "0.2.3"
 generic-array = "0.14.4"
 nb = "1.0.0"
+int-enum = "0.4.0"
 
 [dependencies.cast]
 default-features = false

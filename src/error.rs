@@ -1,3 +1,11 @@
+pub use crate::register::RangeStatusErrorCode;
+// use embedded_hal::blocking::i2c::{
+//     Write::Error as I2cWriteError, WriteRead::Error as I2cWriteReadError,
+// };
+use int_enum::{IntEnum, IntEnumError};
+
+// use int_enum::{self, IntEnum, IntEnumError};
+
 /// MPU Error
 #[derive(Debug, Copy, Clone)]
 pub enum Error<E> {
@@ -15,6 +23,12 @@ pub enum Error<E> {
     InvalidScalingFactor(u8),
     /// Invalid configuration value
     InvalidConfigurationValue(u16),
+    /// The measurement reading is not ready
+    ResultNotReady,
+    /// Error reading the range measurement
+    RangeStatusError(RangeStatusErrorCode),
+    /// Error converting a code read from a register to it's enum form
+    UnknownRegisterCode,
 }
 
 impl<E> From<E> for Error<E> {
@@ -22,3 +36,12 @@ impl<E> From<E> for Error<E> {
         Error::BusError(error)
     }
 }
+
+// impl<T, E> From<IntEnumError<T>> for Error<E>
+// where
+//     T: IntEnum,
+// {
+//     fn from(_: IntEnumError<T>) -> Self {
+//         Error::UnknownRegisterCode
+//     }
+// }

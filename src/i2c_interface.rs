@@ -76,14 +76,14 @@ where
     //     Ok(())
     // }
 
-    pub(super) fn write_named_register(&mut self, reg: Register8Bit, val: u8) -> Result<(), E> {
-        self.write_register(reg as u16, val)
+    pub(super) fn write_named_register(&mut self, reg: Register8Bit, code: u8) -> Result<(), E> {
+        self.write_register(reg as u16, code)
     }
 
-    pub(super) fn write_register(&mut self, reg: u16, val: u8) -> Result<(), E> {
+    pub(super) fn write_register(&mut self, reg: u16, code: u8) -> Result<(), E> {
         let mut buffer = [0];
         let reg = reg.to_be_bytes();
-        let bytes: [u8; 3] = [reg[0], reg[1], val];
+        let bytes: [u8; 3] = [reg[0], reg[1], code];
         self.com
             .write_read(self.config.address, &bytes, &mut buffer)
     }
@@ -91,16 +91,16 @@ where
     pub(super) fn write_named_register_16bit(
         &mut self,
         reg: Register16Bit,
-        val: u16,
+        code: u16,
     ) -> Result<(), E> {
-        self.write_register_16bit(reg as u16, val)
+        self.write_register_16bit(reg as u16, code)
     }
 
-    fn write_register_16bit(&mut self, reg: u16, val: u16) -> Result<(), E> {
+    fn write_register_16bit(&mut self, reg: u16, code: u16) -> Result<(), E> {
         let mut buffer = [0];
-        let val = val.to_be_bytes();
+        let code = code.to_be_bytes();
         let reg = reg.to_be_bytes();
-        let bytes: [u8; 4] = [reg[0], reg[1], val[0], val[1]];
+        let bytes: [u8; 4] = [reg[0], reg[1], code[0], code[1]];
         self.com
             .write_read(self.config.address, &bytes, &mut buffer)
     }
@@ -108,16 +108,16 @@ where
     pub(super) fn write_named_register_32bit(
         &mut self,
         reg: Register16Bit,
-        val: u32,
+        code: u32,
     ) -> Result<(), E> {
-        self.write_register_32bit(reg as u32, val)
+        self.write_register_32bit(reg as u32, code)
     }
 
-    fn write_register_32bit(&mut self, reg: u32, val: u32) -> Result<(), E> {
+    fn write_register_32bit(&mut self, reg: u32, code: u32) -> Result<(), E> {
         let mut buffer = [0];
-        let val = val.to_be_bytes();
+        let code = code.to_be_bytes();
         let reg = reg.to_be_bytes();
-        let bytes: [u8; 6] = [reg[0], reg[1], val[0], val[1], val[2], val[3]];
+        let bytes: [u8; 6] = [reg[0], reg[1], code[0], code[1], code[2], code[3]];
         self.com
             .write_read(self.config.address, &bytes, &mut buffer)
     }
