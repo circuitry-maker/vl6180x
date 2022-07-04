@@ -24,7 +24,8 @@ mod config;
 /// The possible error values
 pub mod error;
 mod i2c_interface;
-mod mode;
+/// Operating modes
+pub mod mode;
 mod register;
 
 /// Struct for VL6180X state
@@ -52,6 +53,18 @@ where
             mode: ReadyMode,
             com: i2c,
             config: Config::new(),
+            state: State { did_timeout: false },
+        };
+        chip.init_hardware()?;
+        Ok(chip)
+    }
+
+    /// Create a new VL6180X driver in `ReadyMode` cloning provided config values
+    pub fn with_config(i2c: I2C, config: &Config) -> Result<Self, Error<E>> {
+        let mut chip = Self {
+            mode: ReadyMode,
+            com: i2c,
+            config: config.clone(),
             state: State { did_timeout: false },
         };
         chip.init_hardware()?;

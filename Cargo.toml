@@ -13,11 +13,4 @@ exclude = []
 
 [dependencies]
 embedded-hal = "0.2.3"
-generic-array = "0.14.4"
-nb = "1.0.0"
-int-enum = "0.4.0"
-
-[dependencies.cast]
-default-features = false
-version = "0.3.0"
-uninit = "0.1.0"
+int-enum = {version = "0.4.0", default-features = false}

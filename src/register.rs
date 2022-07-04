@@ -1,3 +1,4 @@
+use core::convert::TryFrom;
 use int_enum::{IntEnum, IntEnumError};
 
 #[cfg(test)]
@@ -134,6 +135,11 @@ pub enum SysAmbientStartCode {
     ContinuousStartOrStop = 0b000000_11,
 }
 
+pub enum InterleavedModeEnableCode {
+    Enable = 1,
+    Disable = 0,
+}
+
 /// Register: RESULT__INTERRUPT_STATUS_GPIO
 pub enum ResultInterruptStatusGpioCode {
     NoError, // 0b00_XXX_XXX
@@ -162,10 +168,12 @@ impl ResultInterruptStatusGpioCode {
     }
 }
 
-/// Register: RESULT__RANGE_STATUS
+/// Errors from performing a range measurement
+/// See VL6180X datasheet section 2.7.2 Range error codes
+/// or section 6.2.37 RESULT__RANGE_STATUS
 // Bits 7:4 of what is returned from the register
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, IntEnum)]
+#[derive(Debug, Copy, Clone, IntEnum, PartialEq)]
 pub enum RangeStatusErrorCode {
     /// Valid measurement
     NoError = 0b0000,
@@ -202,7 +210,38 @@ impl RangeStatusErrorCode {
     fn has_error(within: u8) -> bool {
         (within >> 4) != 0
     }
-    pub fn from_u8(code: u8) -> Result<Self, IntEnumError<Self>> {
+}
+
+impl TryFrom<u8> for RangeStatusErrorCode {
+    type Error = IntEnumError<Self>;
+    fn try_from(code: u8) -> Result<Self, Self::Error> {
         RangeStatusErrorCode::from_int(code >> 4)
+    }
+}
+
+/// Errors from performing an ambient light measurement
+/// See VL6180X datasheet section 6.2.38 RESULT__ALS_STATUS
+// Bits 7:4 of what is returned from the register
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, IntEnum, PartialEq)]
+pub enum AmbientStatusErrorCode {
+    /// Valid measurement
+    NoError = 0b0000,
+    /// Overflow error
+    Overflow = 0b0001,
+    /// Underflow error
+    Underflow = 0b0010,
+}
+
+impl AmbientStatusErrorCode {
+    fn has_error(within: u8) -> bool {
+        (within >> 4) != 0
+    }
+}
+
+impl TryFrom<u8> for AmbientStatusErrorCode {
+    type Error = IntEnumError<Self>;
+    fn try_from(code: u8) -> Result<Self, Self::Error> {
+        AmbientStatusErrorCode::from_int(code >> 4)
     }
 }

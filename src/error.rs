@@ -1,13 +1,7 @@
-pub use crate::register::RangeStatusErrorCode;
-// use embedded_hal::blocking::i2c::{
-//     Write::Error as I2cWriteError, WriteRead::Error as I2cWriteReadError,
-// };
-use int_enum::{IntEnum, IntEnumError};
-
-// use int_enum::{self, IntEnum, IntEnumError};
+pub use crate::register::{AmbientStatusErrorCode, RangeStatusErrorCode};
 
 /// MPU Error
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Error<E> {
     /// WHO_AM_I returned invalid value (returned value is argument).
     InvalidDevice(u8),
@@ -27,8 +21,10 @@ pub enum Error<E> {
     ResultNotReady,
     /// Error reading the range measurement
     RangeStatusError(RangeStatusErrorCode),
+    /// Error reading the ambient light measurement
+    AmbientStatusError(AmbientStatusErrorCode),
     /// Error converting a code read from a register to it's enum form
-    UnknownRegisterCode,
+    UnknownRegisterCode(u8),
 }
 
 impl<E> From<E> for Error<E> {
@@ -36,12 +32,3 @@ impl<E> From<E> for Error<E> {
         Error::BusError(error)
     }
 }
-
-// impl<T, E> From<IntEnumError<T>> for Error<E>
-// where
-//     T: IntEnum,
-// {
-//     fn from(_: IntEnumError<T>) -> Self {
-//         Error::UnknownRegisterCode
-//     }
-// }

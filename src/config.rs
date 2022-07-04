@@ -113,7 +113,7 @@ impl Config {
     /// Reducing the max convergence time will reduce the maximum time a measurement will be
     /// allowed to complete and can reduce the power consumption when no target is present. We
     /// recommend a value of 30ms for the max convergence time as a suitable starting point.
-    pub fn set_range_max_convergence_time(&mut self, time_ms: u8) -> Result<(), Error<u8>> {
+    pub fn set_range_max_convergence_time(&mut self, time_ms: u8) -> Result<(), Error<()>> {
         if time_ms < 2 || time_ms > 63 {
             return Err(Error::InvalidConfigurationValue(time_ms as u16));
         }
@@ -133,7 +133,7 @@ impl Config {
     ///
     /// The intermeasurement period needs to be set to a value that is above the maximum
     /// allowable full ranging cycle period.
-    pub fn set_range_inter_measurement_period(&mut self, time_ms: u16) -> Result<(), Error<u16>> {
+    pub fn set_range_inter_measurement_period(&mut self, time_ms: u16) -> Result<(), Error<()>> {
         let min_eq_val = ((self.range_max_convergence_time + 5) as f32 / 0.9) as u16;
         let min = if 10 < min_eq_val { min_eq_val } else { 10 };
         if time_ms % 10 != 0 || time_ms < min || time_ms > 2550 {
@@ -186,7 +186,7 @@ impl Config {
     ///
     /// 7: ALS Gain = 40
     // TODO: change to enum
-    pub fn set_ambient_analogue_gain_level(&mut self, level: u8) -> Result<(), Error<u8>> {
+    pub fn set_ambient_analogue_gain_level(&mut self, level: u8) -> Result<(), Error<()>> {
         if level > 7 {
             return Err(Error::InvalidConfigurationValue(level as u16));
         }
@@ -201,7 +201,7 @@ impl Config {
     /// The integration period is the time over which a single ambient light
     /// measurement is made. Integration times in the range 50-100ms are
     /// recommended to reduce impact of light flicker from artificial lighting
-    pub fn set_ambient_integration_period(&mut self, time_ms: u16) -> Result<(), Error<u16>> {
+    pub fn set_ambient_integration_period(&mut self, time_ms: u16) -> Result<(), Error<()>> {
         if time_ms < 1 || time_ms > 256 {
             return Err(Error::InvalidConfigurationValue(time_ms as u16));
         }
@@ -215,11 +215,9 @@ impl Config {
     /// [ambient_integration_period](#method.set_ambient_integration_period) * 1.1
     /// ≤ `ambient_inter_measurement_period` * 0.9
     ///
-    /// Max = 2550ms; Default = 500ms;
+    /// Max = 2550ms; Default = 500ms; Value must be a multiple of 10ms.
     ///
-    /// Value must be a multiple of 10ms.
-    ///
-    /// Note: for interleaved mode, the following equation must be met:
+    /// Note: for interleaved mode, the following equation must be satisfied:
     ///
     /// ([range_max_convergence_time](#method.set_range_max_convergence_time) + 5) +
     /// ([ambient_integration_period](#method.set_ambient_integration_period) * 1.1)
