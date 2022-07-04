@@ -63,9 +63,9 @@ where
 
     fn get_range_val_and_status(&mut self) -> Result<u8, Error<E>> {
         let status = self.read_named_register(Register8Bit::RESULT__RANGE_STATUS)?;
-        if status != RangeStatusErrorCode::NoError as u8 {
-            let error = RangeStatusErrorCode::try_from(status)
-                .map_err(|_| Error::UnknownRegisterCode(status))?;
+        let error = RangeStatusErrorCode::try_from(status)
+            .map_err(|_| Error::UnknownRegisterCode(status))?;
+        if error != RangeStatusErrorCode::NoError {
             return Err(Error::RangeStatusError(error));
         }
         let range = self.read_named_register(Register8Bit::RESULT__RANGE_VAL)?;
