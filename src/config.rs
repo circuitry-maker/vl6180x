@@ -5,14 +5,6 @@ mod config_tests;
 
 pub(super) const ADDRESS_DEFAULT: u8 = 0x29;
 
-// TODO: move these valid register codes to
-// RANGE_SCALER values for 1x, 2x, 3x scaling - see STSW-IMG003 core/src/vl6180x_api.c (ScalerLookUP[])
-pub(super) const RANGE_SCALAR_VALUES: [u16; 4] = [0, 253, 127, 84];
-/// See datasheet 2.10.6 for more details
-pub(super) const SYSALS__ANALOGUE_GAIN_VALUES: [u8; 8] =
-    [0x46, 0x45, 0x44, 0x43, 0x42, 0x41, 0x40, 0x47];
-//  1.01,  1.28, 1.72, 2.60, 5.21, 10.32, 20, 40
-
 /// Possible interrupt modes for ambient light readings
 #[derive(Debug, Clone, Copy)]
 pub enum AmbientInterruptMode {
@@ -51,7 +43,7 @@ pub struct Config {
     pub(super) measurement_timing_budget_microseconds: u32,
     pub(super) address: u8,
     pub(super) range_scaling: u8,
-    // TODO: ambient_scaling
+    pub(super) ambient_scaling: u8,
     pub(super) ptp_offset: u8,
     pub(super) io_timeout: u16,
 
@@ -81,9 +73,11 @@ impl Config {
             stop_variable: 0,
             measurement_timing_budget_microseconds: 0,
             address: ADDRESS_DEFAULT,
-            range_scaling: 1,
             ptp_offset: 0,
             io_timeout: 500,
+
+            range_scaling: 1,
+            ambient_scaling: 1,
 
             // Performance tuning
             readout_averaging_period_multiplier: 48,
@@ -162,13 +156,23 @@ impl Config {
     /// A VHV calibration is run once at power-up and then automatically
     /// after every `rate_vhv` range measurements. AutoVHV can be disabled
     /// by setting this register to 0.
-    pub fn ambient_integration_period(&mut self, rate_vhv: u8) {
+    pub fn set_vhv_recalibration_rate(&mut self, rate_vhv: u8) {
         self.range_vhv_recalibration_rate = rate_vhv;
+    }
+
+    /// Set ambient result scaler
+    /// Min = 1x; Max = 16x; Default = 1x
+    pub fn set_ambient_result_scaler(&mut self, scaler: u8) -> Result<(), Error<()>> {
+        if scaler < 1 || scaler > 16 {
+            return Err(Error::InvalidConfigurationValue(scaler as u16));
+        }
+        self.ambient_scaling = scaler;
+        Ok(())
     }
 
     /// Set the analogue gain for the ambient light sensor
     ///
-    /// Level Min = 0; Max = 7; Default = 6
+    /// Level Min = 0; Max = 7; Default = 0
     ///
     /// 0: ALS Gain = 1.01
     ///

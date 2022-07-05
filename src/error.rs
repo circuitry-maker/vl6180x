@@ -1,3 +1,4 @@
+use crate::mode;
 pub use crate::register::{AmbientStatusErrorCode, RangeStatusErrorCode};
 
 /// MPU Error
@@ -25,6 +26,8 @@ pub enum Error<E> {
     AmbientStatusError(AmbientStatusErrorCode),
     /// Error converting a code read from a register to it's enum form
     UnknownRegisterCode(u8),
+    /// DynamicMode method call invalid for current operating mode.
+    InvalidMethod(mode::dynamic::OperatingMode),
 }
 
 impl<E> From<E> for Error<E> {

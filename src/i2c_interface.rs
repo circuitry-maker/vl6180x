@@ -20,7 +20,7 @@ where
     }
 
     /// Reads a named 16-bit register
-    pub(super) fn read_named_register_16bit(&mut self, reg: Register16Bit) -> Result<u16, E> {
+    pub(crate) fn read_named_register_16bit(&mut self, reg: Register16Bit) -> Result<u16, E> {
         self.read_register_16bit(reg as u16)
     }
 
