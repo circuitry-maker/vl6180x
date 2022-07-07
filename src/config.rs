@@ -3,8 +3,6 @@ use super::*;
 #[cfg(test)]
 mod config_tests;
 
-pub(super) const ADDRESS_DEFAULT: u8 = 0x29;
-
 /// Possible interrupt modes for ambient light readings
 #[derive(Debug, Clone, Copy)]
 pub enum AmbientInterruptMode {
@@ -38,14 +36,16 @@ pub enum RangeInterruptMode {
 /// Config information for the driver.
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
+    // Unused
     pub(super) io_mode2v8: bool,
     pub(super) stop_variable: u8,
     pub(super) measurement_timing_budget_microseconds: u32,
+    pub(super) ptp_offset: u8,
+
     pub(super) address: u8,
     pub(super) range_scaling: u8,
     pub(super) ambient_scaling: u8,
-    pub(super) ptp_offset: u8,
-    pub(super) io_timeout: u16,
+    pub(super) poll_max_loop: u16,
 
     // Performance tuning
     pub(super) readout_averaging_period_multiplier: u8,
@@ -61,6 +61,10 @@ pub struct Config {
     // Interrupt modes
     pub(super) range_interrupt_mode: RangeInterruptMode,
     pub(super) ambient_interrupt_mode: AmbientInterruptMode,
+    pub(super) range_low_interrupt_threshold: u8,
+    pub(super) range_high_interrupt_threshold: u8,
+    pub(super) ambient_low_interrupt_threshold: u16,
+    pub(super) ambient_high_interrupt_threshold: u16,
 }
 
 impl Config {
@@ -72,9 +76,9 @@ impl Config {
             io_mode2v8: true,
             stop_variable: 0,
             measurement_timing_budget_microseconds: 0,
-            address: ADDRESS_DEFAULT,
+            address: 0x29,
             ptp_offset: 0,
-            io_timeout: 500,
+            poll_max_loop: 500,
 
             range_scaling: 1,
             ambient_scaling: 1,
@@ -93,13 +97,21 @@ impl Config {
             // Interrupt modes
             range_interrupt_mode: RangeInterruptMode::NewSampleReady,
             ambient_interrupt_mode: AmbientInterruptMode::NewSampleReady,
-            // TODO: interrupt thresholds
-
+            range_low_interrupt_threshold: 0,
+            range_high_interrupt_threshold: 0xFF,
+            ambient_low_interrupt_threshold: 0,
+            ambient_high_interrupt_threshold: 0xFFFF,
             // TODO: range_ignore
             // TODO: ambient_lux_resolution_factor
         }
     }
 
+    /// Set the max number of loops during polling measurement.
+    ///
+    /// Default = 500;
+    pub fn set_poll_max_loop(&mut self, max_loop: u16) {
+        self.poll_max_loop = max_loop;
+    }
     /// The range max convergence time (ms) is made up of the convergence time and sampling period.
     ///
     /// Min = 2ms; Max = 63ms; Default = 49ms
@@ -162,11 +174,33 @@ impl Config {
 
     /// Set ambient result scaler
     /// Min = 1x; Max = 16x; Default = 1x
+    ///
+    /// VL6180X datatsheet: Section 2.10.7 Scaler
+    ///
+    /// In addition to analogue gain, the VL6180X has a scaler that multiplies the ALS count prior to the result being read.
+    /// This value, in addition to the analogue gain is useful in very low light conditions to increase the dynamic range.
     pub fn set_ambient_result_scaler(&mut self, scaler: u8) -> Result<(), Error<()>> {
         if scaler < 1 || scaler > 16 {
             return Err(Error::InvalidConfigurationValue(scaler as u16));
         }
         self.ambient_scaling = scaler;
+        Ok(())
+    }
+
+    /// Set range scaling factor.
+    ///
+    /// Min = 1x; Max = 3x; Default = 1x
+    ///
+    /// The sensor uses 1x scaling by default, giving range
+    /// measurements in units of mm. Increasing the scaling to 2x or 3x makes it give
+    /// raw values in units of 2 mm or 3 mm instead. In other words, a bigger scaling
+    /// factor increases the sensor's potential maximum range but reduces its
+    /// resolution.
+    pub fn set_range_result_scaler(&mut self, scaler: u8) -> Result<(), Error<()>> {
+        if scaler < 1 || scaler > 3 {
+            return Err(Error::InvalidConfigurationValue(scaler as u16));
+        }
+        self.range_scaling = scaler;
         Ok(())
     }
 
@@ -189,7 +223,6 @@ impl Config {
     /// 6: ALS Gain = 20
     ///
     /// 7: ALS Gain = 40
-    // TODO: change to enum
     pub fn set_ambient_analogue_gain_level(&mut self, level: u8) -> Result<(), Error<()>> {
         if level > 7 {
             return Err(Error::InvalidConfigurationValue(level as u16));
@@ -228,7 +261,7 @@ impl Config {
     /// ≤ `ambient_inter_measurement_period` * 0.9
     ///
     /// The interleaved requirement is only checked when the interleaved mode is started.
-    pub fn set_ambient_inter_measurement_period(&mut self, time_ms: u16) -> Result<(), Error<u16>> {
+    pub fn set_ambient_inter_measurement_period(&mut self, time_ms: u16) -> Result<(), Error<()>> {
         let min_eq_val = ((self.ambient_integration_period as f32 * 1.1) / 0.9) as u16;
         let min = if 10 < min_eq_val { min_eq_val } else { 10 };
         if time_ms % 10 != 0 || time_ms < min || time_ms > 2560 {
@@ -253,6 +286,24 @@ impl Config {
         self.range_interrupt_mode = interrupt_mode;
     }
 
+    /// Set the low threshold for range interrupt.
+    ///
+    /// Default = 0;
+    ///
+    /// Note: This value will be multiplied by the [range_result_scaler](#method.set_range_result_scaler) used
+    pub fn set_range_low_interrupt_threshold(&mut self, threshold: u8) {
+        self.range_low_interrupt_threshold = threshold;
+    }
+
+    /// Set the high threshold for range interrupt.
+    ///
+    /// Default = 255;
+    ///
+    /// Note: This value will be multiplied by the [range_result_scaler](#method.set_range_result_scaler) used
+    pub fn set_range_high_interrupt_threshold(&mut self, threshold: u8) {
+        self.range_high_interrupt_threshold = threshold;
+    }
+
     /// Set the ambient light sensor interrupt mode. Possible values:
     ///
     /// Disabled
@@ -266,6 +317,31 @@ impl Config {
     /// New Sample Ready (this is the default)
     pub fn set_ambient_interrupt_mode(&mut self, interrupt_mode: AmbientInterruptMode) {
         self.ambient_interrupt_mode = interrupt_mode;
+    }
+
+    /// Set the low threshold for ambient interrupt.
+    ///
+    /// Default = 0x0;
+    ///
+    /// Note: Threshold is in raw device value not lux.
+    /// This value will be multiplied by the [ambient_result_scaler](#method.set_ambient_result_scaler) used
+    pub fn set_ambient_low_interrupt_threshold(&mut self, threshold: u16) {
+        self.ambient_low_interrupt_threshold = threshold;
+    }
+
+    /// Set the high threshold for ambient interrupt.
+    ///
+    /// Default = 0xFFFF;
+    ///
+    /// Note: Threshold is in raw device value not lux.
+    /// This value will be multiplied by the [ambient_result_scaler](#method.set_ambient_result_scaler) used
+    pub fn set_ambient_high_interrupt_threshold(&mut self, threshold: u16) {
+        self.ambient_low_interrupt_threshold = threshold;
+    }
+
+    /// Set the i2c address for the initial connection
+    pub fn set_i2c_address(&mut self, address: u8) {
+        self.address = address;
     }
 
     // TODO: 6.2 Additional error checks

@@ -21,15 +21,8 @@ where
             mode,
             com: self.com,
             config: self.config,
-            state: self.state,
         }
     }
-}
-
-/// Operating modes with this trait have an implementation to initialize VL6180X into that mode.
-pub trait AllowInit {
-    /// Create a new instance of itself.
-    fn new() -> Self;
 }
 
 /// Operating modes with this trait have an implementation for reading measurements
@@ -51,28 +44,28 @@ where
 {
     /// Blocking read of the range mesurement.
     /// The reading (whether single or continuous) must already have been started.
-    pub fn read_range_blocking_mm(&mut self) -> Result<u8, Error<E>> {
-        self.read_range_blocking_mm_direct()
+    pub fn read_range_mm_blocking(&mut self) -> Result<u16, Error<E>> {
+        self.read_range_mm_blocking_direct()
     }
 
     /// Non-blocking read of the range measurement.
     /// The reading (whether single or continuous) must already have been started.
     /// Returns [Error::ResultNotReady] if the result is not ready.
-    pub fn read_range_mm(&mut self) -> Result<u8, Error<E>> {
+    pub fn read_range_mm(&mut self) -> Result<u16, Error<E>> {
         self.read_range_mm_direct()
     }
 
     /// Blocking read of the range mesurement.
     /// The reading (whether single or continuous) must already have been started.
-    pub fn read_ambient_blocking(&mut self) -> Result<u16, Error<E>> {
-        self.read_ambient_blocking_direct()
+    pub fn read_ambient_lux_blocking(&mut self) -> Result<f32, Error<E>> {
+        self.read_ambient_lux_blocking_direct()
     }
 
     /// Non-blocking read of the ambient light measurement.
     /// The reading (whether single or continuous) must already have been started.
     /// Returns [Error::ResultNotReady] if the result is not ready.
-    pub fn read_ambient(&mut self) -> Result<u16, Error<E>> {
-        self.read_ambient_direct()
+    pub fn read_ambient_lux(&mut self) -> Result<f32, Error<E>> {
+        self.read_ambient_lux_direct()
     }
 }
 
@@ -84,11 +77,11 @@ where
     /// Trigger ambient light measurement in a non-blocking way.
     ///
     /// Does not return the result. To get the measured value the host has the following options:
-    /// 1. Check regularly to see if the result is ready with [`read_ambient`](#method.read_ambient)
-    /// 2. Call [`read_ambient_blocking`](#method.read_ambient_blocking) to have the driver
+    /// 1. Check regularly to see if the result is ready with [`read_ambient_lux`](#method.read_ambient_lux)
+    /// 2. Call [`read_ambient_lux_blocking`](#method.read_ambient_lux_blocking) to have the driver
     /// perform the regular checks in a blocking way.
     /// 3. Wait for the ambient interrupt to be triggered, indicating that the
-    /// new sample is ready, then call [`read_ambient`](#method.read_ambient).
+    /// new sample is ready, then call [`read_ambient_lux`](#method.read_ambient_lux).
     pub fn start_ambient_single(&mut self) -> Result<(), E> {
         self.start_ambient_single_direct()
     }

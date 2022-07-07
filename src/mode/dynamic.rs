@@ -1,9 +1,10 @@
 use crate::error::Error;
 use crate::VL6180X;
-use embedded_hal::blocking::i2c::{Write, WriteRead};
+use embedded_hal::{
+    blocking::i2c::{Write, WriteRead},
+    digital::v2::OutputPin,
+};
 use OperatingMode::*;
-
-use super::AllowInit;
 
 /// Sensor has been configured and is ready to take single measurements or switch to a
 /// continuous measurement mode
@@ -28,8 +29,8 @@ pub enum OperatingMode {
     InterleavedContinuous,
 }
 
-impl AllowInit for DynamicMode {
-    fn new() -> Self {
+impl DynamicMode {
+    pub(crate) fn new() -> Self {
         Self {
             operating_mode: Ready,
         }
@@ -43,7 +44,7 @@ where
     /// Same functionality as [`poll_range_single_blocking_mm()`](#method.poll_range_single_blocking_mm)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready], otherwise returns [Error::InvalidMethod]
-    pub fn try_poll_range_single_blocking_mm(&mut self) -> Result<u8, Error<E>> {
+    pub fn try_poll_range_single_blocking_mm(&mut self) -> Result<u16, Error<E>> {
         if self.mode.operating_mode != Ready {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
@@ -53,7 +54,7 @@ where
     /// Same functionality as [`poll_ambient_single_blocking()`](#method.poll_ambient_single_blocking)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready], otherwise returns [Error::InvalidMethod]
-    pub fn try_poll_ambient_single_blocking(&mut self) -> Result<u16, Error<E>> {
+    pub fn try_poll_ambient_single_blocking(&mut self) -> Result<f32, Error<E>> {
         if self.mode.operating_mode != Ready {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
@@ -148,47 +149,79 @@ where
         self.start_ambient_single_direct()
     }
 
-    /// Same functionality as [`read_range_blocking_mm()`](#method.read_range_blocking_mm)
+    /// Same functionality as [`read_range_mm_blocking()`](#method.read_range_mm_blocking)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
-    pub fn try_read_range_blocking_mm(&mut self) -> Result<u8, Error<E>> {
+    pub fn try_read_range_mm_blocking(&mut self) -> Result<u16, Error<E>> {
         if self.mode.operating_mode == PoweredOff {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
-        self.read_range_blocking_mm_direct()
+        self.read_range_mm_blocking_direct()
     }
 
     /// Same functionality as [`read_range_mm()`](#method.read_range_mm)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
-    pub fn try_read_range_mm(&mut self) -> Result<u8, Error<E>> {
+    pub fn try_read_range_mm(&mut self) -> Result<u16, Error<E>> {
         if self.mode.operating_mode == PoweredOff {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
         self.read_range_mm_direct()
     }
 
-    /// Same functionality as [`read_ambient_blocking()`](#method.read_ambient_blocking)
+    /// Same functionality as [`read_ambient_lux_blocking()`](#method.read_ambient_lux_blocking)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
-    pub fn try_read_ambient_blocking(&mut self) -> Result<u16, Error<E>> {
+    pub fn try_read_ambient_lux_blocking(&mut self) -> Result<f32, Error<E>> {
         if self.mode.operating_mode == PoweredOff {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
-        self.read_ambient_blocking_direct()
+        self.read_ambient_lux_blocking_direct()
     }
 
-    /// Same functionality as [`read_ambient()`](#method.read_ambient)
+    /// Same functionality as [`read_ambient_lux()`](#method.read_ambient_lux)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
-    pub fn try_read_ambient(&mut self) -> Result<u16, Error<E>> {
+    pub fn try_read_ambient_lux(&mut self) -> Result<f32, Error<E>> {
         if self.mode.operating_mode == PoweredOff {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
-        self.read_ambient_direct()
+        self.read_ambient_lux_direct()
+    }
+
+    /// Same functionality as [`power_off()`](#method.power_off)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_power_off<P: OutputPin<Error = E>>(
+        &mut self,
+        x_shutdown_pin: &mut P,
+    ) -> Result<(), Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.power_off_direct(x_shutdown_pin)?;
+        self.mode.operating_mode = PoweredOff;
+        Ok(())
+    }
+
+    /// Same functionality as [`power_on_and_init()`](#method.power_on_and_init)
+    /// but with a check on the current [OperatingMode].
+    /// Valid when OperatingMode is [PoweredOff],
+    /// otherwise returns [Error::InvalidMethod]
+    pub fn try_power_on_and_init<P: OutputPin<Error = E>>(
+        &mut self,
+        x_shutdown_pin: &mut P,
+    ) -> Result<(), Error<E>> {
+        if self.mode.operating_mode != PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.power_on_and_init_direct(x_shutdown_pin)?;
+        self.mode.operating_mode = Ready;
+        Ok(())
     }
 }

@@ -2,13 +2,65 @@ use super::*;
 
 #[test]
 fn interupt_has_error() {
-    assert_eq!(ResultInterruptStatusGpioCode::has_error(0b11_000_010), true)
+    assert_eq!(
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoError,
+            0b11_000_010
+        ),
+        false
+    )
 }
 #[test]
 fn interupt_has_no_error() {
     assert_eq!(
-        ResultInterruptStatusGpioCode::has_error(0b00_001_001),
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoError,
+            0b00_001_001
+        ),
+        true
+    )
+}
+
+#[test]
+fn interupt_has_no_ambient_event() {
+    assert_eq!(
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoAmbientEvents,
+            0b00_000_001
+        ),
+        true
+    )
+}
+#[test]
+fn interupt_has_ambient_event() {
+    assert_eq!(
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoAmbientEvents,
+            0b00_001_001
+        ),
         false
+    )
+}
+
+#[test]
+fn interupt_has_ambient_high_event() {
+    assert_eq!(
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::LevelHighAmbientEvent,
+            0b00_010_111
+        ),
+        true
+    )
+}
+
+#[test]
+fn interupt_has_ambient_low_event() {
+    assert_eq!(
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::LevelLowAmbientEvent,
+            0b10_001_111
+        ),
+        true
     )
 }
 

@@ -9,20 +9,20 @@ impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
     I2C: WriteRead<Error = E> + Write<Error = E>,
 {
-    pub(crate) fn poll_range_single_blocking_mm_direct(&mut self) -> Result<u8, Error<E>> {
+    pub(crate) fn poll_range_single_blocking_mm_direct(&mut self) -> Result<u16, Error<E>> {
         self.write_named_register(
             Register8Bit::SYSRANGE__START,
             SysRangeStartCode::SingleStart as u8,
         )?;
-        self.read_range_blocking_mm_direct()
+        self.read_range_mm_blocking_direct()
     }
 
-    pub(crate) fn poll_ambient_single_blocking_direct(&mut self) -> Result<u16, Error<E>> {
+    pub(crate) fn poll_ambient_single_blocking_direct(&mut self) -> Result<f32, Error<E>> {
         self.write_named_register(
             Register8Bit::SYSALS__START,
             SysAmbientStartCode::SingleStart as u8,
         )?;
-        self.read_ambient_blocking_direct()
+        self.read_ambient_lux_blocking_direct()
     }
 
     pub(crate) fn start_ambient_single_direct(&mut self) -> Result<(), E> {

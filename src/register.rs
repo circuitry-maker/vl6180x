@@ -140,31 +140,54 @@ pub enum InterleavedModeEnableCode {
     Disable = 0,
 }
 
+/// Result interrupt status codes
 /// Register: RESULT__INTERRUPT_STATUS_GPIO
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ResultInterruptStatusGpioCode {
+    /// No error reported
     NoError, // 0b00_XXX_XXX
+    /// Laser safety error
     LaserSafetyError = 0b01_000_000,
-    PhaseLockedLoopError = 0b10_000_000,
+    /// Phase Locked Loop (PLL) error (either PLL1 or PLL2)
+    PllError = 0b10_000_000,
 
+    /// No threshold events reported
     NoAmbientEvents, // 0bXX_000_XXX
+    /// Low level threshold event
     LevelLowAmbientEvent = 0b00_001_000,
+    /// High level threshold event
     LevelHighAmbientEvent = 0b00_010_000,
+    /// Out of window threshold event
     OutOfWindowAmbientEvent = 0b00_011_000,
+    /// New sample ready event
     NewSampleReadyAmbientEvent = 0b00_100_000,
 
+    /// No threshold events reported
     NoRangeEvents, // 0bXX_XXX_000
+    /// Low level threshold event
     LevelLowRangeEvent = 0b00_000_001,
+    /// High level threshold event
     LevelHighRangeEvent = 0b00_000_010,
+    /// Out of window threshold event
     OutOfWindowRangeEvent = 0b00_000_011,
+    /// New sample ready event
     NewSampleReadyRangeEvent = 0b00_000_100,
 }
 
 impl ResultInterruptStatusGpioCode {
-    pub fn has_error(within: u8) -> bool {
-        within >> 6 != 0
-    }
-    pub fn has_error_or_event(look_for: ResultInterruptStatusGpioCode, within: u8) -> bool {
-        !(look_for as u8 & within == 0)
+    /// Returns whether there is the specific event reported within the ResultInterruptStatusGpioCode
+    pub fn has_status(look_for: ResultInterruptStatusGpioCode, within: u8) -> bool {
+        const ERROR_MASK: u8 = 0b11_000_000;
+        const AMBIENT_MASK: u8 = 0b00_111_000;
+        const RANGE_MASK: u8 = 0b00_000_111;
+
+        use ResultInterruptStatusGpioCode::*;
+        match look_for {
+            NoError => within & ERROR_MASK == 0,
+            NoAmbientEvents => within & AMBIENT_MASK == 0,
+            NoRangeEvents => within & RANGE_MASK == 0,
+            _other_status => within & _other_status as u8 != 0,
+        }
     }
 }
 

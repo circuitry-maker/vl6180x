@@ -1,35 +1,9 @@
 use super::VL6180X;
 use crate::error::Error;
-use crate::mode::AllowInit;
 use crate::register::{
     Register16Bit::*, Register8Bit::*, AMBIENT_ANALOGUE_GAIN_CODE, RANGE_SCALAR_CODE,
 };
-use crate::{Config, State};
 use embedded_hal::blocking::i2c::{Write, WriteRead};
-
-impl<MODE, I2C, E> VL6180X<MODE, I2C>
-where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
-    MODE: AllowInit,
-{
-    /// Create a new VL6180X driver
-    pub fn new(i2c: I2C) -> Result<Self, Error<E>> {
-        let default_config = &Config::new();
-        VL6180X::with_config(i2c, &default_config)
-    }
-
-    /// Create a new VL6180X driver cloning provided config values
-    pub fn with_config(i2c: I2C, config: &Config) -> Result<Self, Error<E>> {
-        let mut chip = Self {
-            mode: MODE::new(),
-            com: i2c,
-            config: config.clone(),
-            state: State { did_timeout: false },
-        };
-        chip.init_hardware()?;
-        Ok(chip)
-    }
-}
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
@@ -37,7 +11,7 @@ where
 {
     /// Initialize sensor with settings from ST application note AN4545,
     /// section "SR03 settings" - "Mandatory : private registers"
-    fn init_hardware(&mut self) -> Result<(), Error<E>> {
+    pub(crate) fn init_hardware(&mut self) -> Result<(), Error<E>> {
         // Store part-to-part range offset so it can be adjusted if scaling is changed
         self.config.ptp_offset = self.read_named_register(SYSRANGE__PART_TO_PART_RANGE_OFFSET)?;
 
@@ -106,8 +80,6 @@ where
     /// See VL6180X datasheet and application note to understand how the config
     /// values get transformed into the values the registers are set to.
     fn set_configuration(&mut self) -> Result<(), Error<E>> {
-        // "Recommended : Public registers"
-
         self.write_named_register(
             READOUT__AVERAGING_SAMPLE_PERIOD,
             self.config.readout_averaging_period_multiplier,
@@ -118,6 +90,8 @@ where
             AMBIENT_ANALOGUE_GAIN_CODE[self.config.ambient_analogue_gain_level as usize],
         )?;
 
+        self.write_named_register(FIRMWARE__RESULT_SCALER, self.config.ambient_scaling)?;
+
         self.write_named_register(
             SYSRANGE__VHV_REPEAT_RATE,
             self.config.range_vhv_recalibration_rate,
@@ -126,23 +100,21 @@ where
         let integration_period_val = self.config.ambient_integration_period - 1;
         self.write_named_register_16bit(SYSALS__INTEGRATION_PERIOD, integration_period_val)?;
 
+        let ambient_inter_measurement_val =
+            ((self.config.ambient_inter_measurement_period / 10) as u8) - 1;
+        self.write_named_register(
+            SYSALS__INTERMEASUREMENT_PERIOD,
+            ambient_inter_measurement_val,
+        )?;
+
         // Manually trigger a range VHV recalibration
         self.write_named_register(SYSRANGE__VHV_RECALIBRATE, 0x01)?;
-
-        // "Optional: Public registers"
 
         let range_inter_measurement_val =
             ((self.config.range_inter_measurement_period / 10) as u8) - 1;
         self.write_named_register(
             SYSRANGE__INTERMEASUREMENT_PERIOD,
             range_inter_measurement_val,
-        )?;
-
-        let ambient_inter_measurement_val =
-            ((self.config.ambient_inter_measurement_period / 10) as u8) - 1;
-        self.write_named_register(
-            SYSALS__INTERMEASUREMENT_PERIOD,
-            ambient_inter_measurement_val,
         )?;
 
         let interrupt_val =
@@ -157,19 +129,13 @@ where
         // disable interleaved mode
         self.write_named_register(INTERLEAVED_MODE__ENABLE, 0)?;
 
-        // reset range scaling factor to 1x
-        self.set_range_scaling(1)?;
+        self.set_range_scaling(self.config.range_scaling)?;
 
         Ok(())
     }
 
     fn set_range_scaling(&mut self, new_scaling: u8) -> Result<(), Error<E>> {
         const DEFAULT_CROSSTALK_VALID_HEIGHT: u8 = 20; // default value of SYSRANGE__CROSSTALK_VALID_HEIGHT
-
-        // do nothing if scaling value is invalid
-        if new_scaling < 1 || new_scaling > 3 {
-            return Err(Error::InvalidScalingFactor(new_scaling));
-        }
 
         let scaling = new_scaling;
         self.write_named_register_16bit(RANGE_SCALER, RANGE_SCALAR_CODE[scaling as usize])?;
@@ -194,10 +160,5 @@ where
         self.write_named_register(SYSRANGE__RANGE_CHECK_ENABLES, (rce & 0xFE) | is_scaling_one)?;
 
         Ok(())
-    }
-
-    /// Read the model id of the sensor. Should return 0xB4.
-    pub fn read_model_id(&mut self) -> Result<u8, E> {
-        self.read_named_register(IDENTIFICATION__MODEL_ID)
     }
 }
