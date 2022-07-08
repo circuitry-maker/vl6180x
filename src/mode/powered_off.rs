@@ -3,7 +3,7 @@ use embedded_hal::{
     digital::v2::OutputPin,
 };
 
-use crate::{error::Error, mode::ReadyMode, VL6180X};
+use crate::{error::Error2, mode::ReadyMode, VL6180X};
 
 /// Sensor is powered off
 #[derive(Debug, Copy, Clone)]
@@ -15,10 +15,10 @@ where
 {
     /// Powers on the sensor by setting the `x_shutdown_pin` high.
     /// It then busy waits for the device to be booted and initializes the device.
-    pub fn power_on_and_init<P: OutputPin<Error = E>>(
+    pub fn power_on_and_init<PE, P: OutputPin<Error = PE>>(
         mut self,
         x_shutdown_pin: &mut P,
-    ) -> Result<VL6180X<ReadyMode, I2C>, Error<E>> {
+    ) -> Result<VL6180X<ReadyMode, I2C>, Error2<E, PE>> {
         self.power_on_and_init_direct(x_shutdown_pin)?;
         Ok(self.into_mode(ReadyMode))
     }

@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{Error, Error2};
 use crate::VL6180X;
 use embedded_hal::{
     blocking::i2c::{Write, WriteRead},
@@ -6,8 +6,10 @@ use embedded_hal::{
 };
 use OperatingMode::*;
 
-/// Sensor has been configured and is ready to take single measurements or switch to a
-/// continuous measurement mode
+/// A mode where the state is kept track of at runtime, instead of being
+/// encoded into the type. Thus allowing you to change the mode often,
+/// and without problems with ownership, or references, at the cost of some
+/// performance and the risk of runtime errors.
 #[derive(Debug, Copy, Clone)]
 pub struct DynamicMode {
     operating_mode: OperatingMode,
@@ -193,14 +195,69 @@ where
         self.read_ambient_lux_direct()
     }
 
+    /// Same functionality as [`clear_error_interrupt()`](#method.clear_error_interrupt)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_clear_error_interrupt(&mut self) -> Result<(), Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.clear_error_interrupt_direct()
+    }
+
+    /// Same functionality as [`clear_ambient_interrupt()`](#method.clear_ambient_interrupt)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_clear_ambient_interrupt(&mut self) -> Result<(), Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.clear_ambient_interrupt_direct()
+    }
+
+    /// Same functionality as [`clear_range_interrupt()`](#method.clear_range_interrupt)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_clear_range_interrupt(&mut self) -> Result<(), Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.clear_range_interrupt_direct()
+    }
+
+    /// Same functionality as [`clear_all_interrupts()`](#method.clear_all_interrupts)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_clear_all_interrupts(&mut self) -> Result<(), Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.clear_all_interrupts_direct()
+    }
+
+    /// Same functionality as [`change_i2c_address()`](#method.change_i2c_address)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_change_i2c_address(&mut self, new_address: u8) -> Result<(), Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.change_i2c_address_direct(new_address)
+    }
+
     /// Same functionality as [`power_off()`](#method.power_off)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
-    pub fn try_power_off<P: OutputPin<Error = E>>(
+    pub fn try_power_off<PE, P: OutputPin<Error = PE>>(
         &mut self,
         x_shutdown_pin: &mut P,
-    ) -> Result<(), Error<E>> {
+    ) -> Result<(), Error<PE>> {
         if self.mode.operating_mode == PoweredOff {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
@@ -213,12 +270,12 @@ where
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [PoweredOff],
     /// otherwise returns [Error::InvalidMethod]
-    pub fn try_power_on_and_init<P: OutputPin<Error = E>>(
+    pub fn try_power_on_and_init<PE, P: OutputPin<Error = PE>>(
         &mut self,
         x_shutdown_pin: &mut P,
-    ) -> Result<(), Error<E>> {
+    ) -> Result<(), Error2<E, PE>> {
         if self.mode.operating_mode != PoweredOff {
-            return Err(Error::InvalidMethod(self.mode.operating_mode));
+            return Err(Error2::InvalidMethod(self.mode.operating_mode));
         }
         self.power_on_and_init_direct(x_shutdown_pin)?;
         self.mode.operating_mode = Ready;

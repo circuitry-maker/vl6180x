@@ -6,6 +6,7 @@ mod ready;
 pub use continuous::*;
 pub use dynamic::*;
 use embedded_hal::blocking::i2c::{Write, WriteRead};
+use embedded_hal::digital::v2::OutputPin;
 pub use powered_off::*;
 pub use ready::*;
 
@@ -24,6 +25,8 @@ where
         }
     }
 }
+/// Allow communication with the device (the device is not powered off)
+pub trait AllowCommunication {}
 
 /// Operating modes with this trait have an implementation for reading measurements
 pub trait AllowReadMeasurement {}
@@ -82,8 +85,9 @@ where
     /// perform the regular checks in a blocking way.
     /// 3. Wait for the ambient interrupt to be triggered, indicating that the
     /// new sample is ready, then call [`read_ambient_lux`](#method.read_ambient_lux).
-    pub fn start_ambient_single(&mut self) -> Result<(), E> {
-        self.start_ambient_single_direct()
+    pub fn start_ambient_single(&mut self) -> Result<(), Error<E>> {
+        self.start_ambient_single_direct()?;
+        Ok(())
     }
 }
 
@@ -100,7 +104,66 @@ where
     /// perform the regular checks in a blocking way.
     /// 3. Wait for the range interrupt to be triggered, indicating that the
     /// new sample is ready, then call [`read_range`](#method.read_range).
-    pub fn start_range_single(&mut self) -> Result<(), E> {
-        self.start_range_single_direct()
+    pub fn start_range_single(&mut self) -> Result<(), Error<E>> {
+        self.start_range_single_direct()?;
+        Ok(())
+    }
+}
+
+impl<MODE, I2C, E> VL6180X<MODE, I2C>
+where
+    I2C: WriteRead<Error = E> + Write<Error = E>,
+    MODE: AllowCommunication,
+{
+    /// Read the model id of the sensor. Should return 0xB4.
+    pub fn read_model_id(&mut self) -> Result<u8, Error<E>> {
+        self.read_model_id_direct()
+    }
+
+    /// Read the current interrupt status of the sensor.
+    /// Can be multiple states of [ResultInterruptStatusGpioCode](crate::register::ResultInterruptStatusGpioCode)
+    pub fn read_interrupt_status(&mut self) -> Result<u8, Error<E>> {
+        self.read_interrupt_status_direct()
+    }
+
+    /// Clear error interrupt
+    pub fn clear_error_interrupt(&mut self) -> Result<(), Error<E>> {
+        self.clear_error_interrupt_direct()
+    }
+
+    /// Clear ambient interrupt
+    pub fn clear_ambient_interrupt(&mut self) -> Result<(), Error<E>> {
+        self.clear_ambient_interrupt_direct()
+    }
+
+    /// Clear range interrupt
+    pub fn clear_range_interrupt(&mut self) -> Result<(), Error<E>> {
+        self.clear_range_interrupt_direct()
+    }
+
+    /// Clear error interrupt
+    pub fn clear_all_interrupts(&mut self) -> Result<(), Error<E>> {
+        self.clear_all_interrupts_direct()
+    }
+
+    /// Powers off the sensor by setting the `x_shutdown_pin` low.
+    pub fn power_off<PE, P: OutputPin<Error = PE>>(
+        self,
+        x_shutdown_pin: &mut P,
+    ) -> Result<VL6180X<PoweredOffMode, I2C>, Error<PE>> {
+        self.power_off_direct(x_shutdown_pin)?;
+        Ok(self.into_mode(PoweredOffMode {}))
+    }
+
+    /// Change current i2c address to new i2c address.
+    ///
+    /// After completion the device will answer to the new address programmed.
+    /// Note that the address resets when the device is powered off.
+    /// Only allows values between 0x08 and 0x77 as the device uses a 7 bit address and
+    /// 0x00 - 0x07 and 0x78 - 0x7F are reserved
+    ///
+    /// AN4478: Using multiple VL6180X's in a single design
+    pub fn change_i2c_address(&mut self, new_address: u8) -> Result<(), Error<E>> {
+        self.change_i2c_address_direct(new_address)
     }
 }

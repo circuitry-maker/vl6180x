@@ -1,6 +1,5 @@
 use crate::mode;
 pub use crate::register::{AmbientStatusErrorCode, RangeStatusErrorCode};
-
 /// MPU Error
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Error<E> {
@@ -28,6 +27,22 @@ pub enum Error<E> {
     InvalidMethod(mode::dynamic::OperatingMode),
     /// Error when setting pin output state.
     GpioPinError(E),
+}
+/// Test
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Error2<E, F> {
+    /// Underlying bus error.
+    BusError(E),
+    /// DynamicMode method call invalid for current operating mode.
+    InvalidMethod(mode::dynamic::OperatingMode),
+    /// Error when setting pin output state.
+    GpioPinError(F),
+}
+
+impl<E, F> From<E> for Error2<E, F> {
+    fn from(error: E) -> Self {
+        Error2::BusError(error)
+    }
 }
 
 impl<E> From<E> for Error<E> {

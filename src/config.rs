@@ -3,33 +3,33 @@ use super::*;
 #[cfg(test)]
 mod config_tests;
 
-/// Possible interrupt modes for ambient light readings
+/// Options for configuring the interrupt trigger condition for ambient measurement.
 #[derive(Debug, Clone, Copy)]
 pub enum AmbientInterruptMode {
-    /// Disabled
-    Disabled = 0b00_000_000,
-    /// Level Low (value < thresh_low)
+    /// No interrupts will be triggered (Default)
+    Disabled = 0,
+    /// Interrupt triggered when value < thresh_low
     LevelLow = 0b00_001_000,
-    /// Level High (value > thresh_high)
+    /// Interrupt triggered when value > thresh_high
     LevelHigh = 0b00_010_000,
-    /// Out Of Window (value < thresh_low OR value > thresh_high)
+    /// Interrupt triggered when value < thresh_low OR value > thresh_high
     OutOfWindow = 0b00_011_000,
-    /// New Sample Ready (this is the default)
+    /// Interrupt triggered when new sample is ready
     NewSampleReady = 0b00_100_000,
 }
 
-/// Possible interrupt modes for range readings
+/// Options for configuring the interrupt trigger condition for range measurement.
 #[derive(Debug, Clone, Copy)]
 pub enum RangeInterruptMode {
-    /// Disabled
-    Disabled = 0b00_000_000,
-    /// Level Low (value < thresh_low)
+    /// No interrupts will be triggered (Default)
+    Disabled = 0,
+    /// Interrupt triggered when value < thresh_low
     LevelLow = 0b00_000_001,
-    /// Level High (value > thresh_high)
+    /// Interrupt triggered when value > thresh_high
     LevelHigh = 0b00_000_010,
-    /// Out Of Window (value < thresh_low OR value > thresh_high)
+    /// Interrupt triggered when value < thresh_low OR value > thresh_high
     OutOfWindow = 0b00_000_011,
-    /// New Sample Ready (this is the default)
+    /// Interrupt triggered when new sample is ready
     NewSampleReady = 0b00_000_100,
 }
 
@@ -95,8 +95,8 @@ impl Config {
             ambient_inter_measurement_period: 500,
 
             // Interrupt modes
-            range_interrupt_mode: RangeInterruptMode::NewSampleReady,
-            ambient_interrupt_mode: AmbientInterruptMode::NewSampleReady,
+            range_interrupt_mode: RangeInterruptMode::Disabled,
+            ambient_interrupt_mode: AmbientInterruptMode::Disabled,
             range_low_interrupt_threshold: 0,
             range_high_interrupt_threshold: 0xFF,
             ambient_low_interrupt_threshold: 0,
@@ -173,14 +173,14 @@ impl Config {
     }
 
     /// Set ambient result scaler
-    /// Min = 1x; Max = 16x; Default = 1x
+    /// Min = 1x; Max = 15x; Default = 1x
     ///
-    /// VL6180X datatsheet: Section 2.10.7 Scaler
+    /// VL6180X datatsheet: Section 2.10.7 Scaler and 6.2.54
     ///
     /// In addition to analogue gain, the VL6180X has a scaler that multiplies the ALS count prior to the result being read.
     /// This value, in addition to the analogue gain is useful in very low light conditions to increase the dynamic range.
     pub fn set_ambient_result_scaler(&mut self, scaler: u8) -> Result<(), Error<()>> {
-        if scaler < 1 || scaler > 16 {
+        if scaler < 1 || scaler > 15 {
             return Err(Error::InvalidConfigurationValue(scaler as u16));
         }
         self.ambient_scaling = scaler;

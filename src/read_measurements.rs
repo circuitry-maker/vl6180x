@@ -4,7 +4,7 @@ use crate::{
     error::Error,
     register::{
         self, AmbientStatusErrorCode, RangeStatusErrorCode, Register16Bit, Register8Bit,
-        ResultInterruptStatusGpioCode, SysInterruptClearCode,
+        ResultInterruptStatusGpioCode,
     },
     VL6180X,
 };
@@ -41,16 +41,13 @@ where
 
     fn get_range_val_and_status(&mut self) -> Result<u16, Error<E>> {
         let status = self.read_named_register(Register8Bit::RESULT__RANGE_STATUS)?;
+        self.clear_range_interrupt_direct()?;
         let error = RangeStatusErrorCode::try_from(status)
             .map_err(|_| Error::UnknownRegisterCode(status))?;
         if error != RangeStatusErrorCode::NoError {
             return Err(Error::RangeStatusError(error));
         }
         let raw_range = self.read_named_register(Register8Bit::RESULT__RANGE_VAL)?;
-        self.write_named_register(
-            Register8Bit::SYSTEM__INTERRUPT_CLEAR,
-            SysInterruptClearCode::ClearRangeInterrupt as u8,
-        )?;
         Ok(self.convert_raw_range_to_mm(raw_range))
     }
 
@@ -59,7 +56,6 @@ where
     }
 
     pub(crate) fn read_ambient_lux_blocking_direct(&mut self) -> Result<f32, Error<E>> {
-        // TODO: convert timeout to be in millis instead of loops.
         let mut c = 0;
         while !ResultInterruptStatusGpioCode::has_status(
             ResultInterruptStatusGpioCode::NewSampleReadyAmbientEvent,
@@ -85,17 +81,13 @@ where
 
     fn get_ambient_val_and_status(&mut self) -> Result<f32, Error<E>> {
         let status = self.read_named_register(Register8Bit::RESULT__ALS_STATUS)?;
+        self.clear_ambient_interrupt_direct()?;
         let error = AmbientStatusErrorCode::try_from(status)
             .map_err(|_| Error::UnknownRegisterCode(status))?;
         if error != AmbientStatusErrorCode::NoError {
             return Err(Error::AmbientStatusError(error));
         }
         let raw_ambient = self.read_named_register_16bit(Register16Bit::RESULT__ALS_VAL)?;
-        self.write_named_register(
-            Register8Bit::SYSTEM__INTERRUPT_CLEAR,
-            SysInterruptClearCode::ClearAmbientInterrupt as u8,
-        )?;
-
         Ok(self.convert_raw_ambient_to_lux(raw_ambient))
     }
 

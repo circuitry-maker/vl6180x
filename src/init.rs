@@ -1,7 +1,7 @@
 use super::VL6180X;
-use crate::error::Error;
 use crate::register::{
-    Register16Bit::*, Register8Bit::*, AMBIENT_ANALOGUE_GAIN_CODE, RANGE_SCALAR_CODE,
+    Register16Bit::*, Register8Bit::*, SysModeGpio1Polarity, SysModeGpio1Select,
+    AMBIENT_ANALOGUE_GAIN_CODE, RANGE_SCALAR_CODE,
 };
 use embedded_hal::blocking::i2c::{Write, WriteRead};
 
@@ -11,75 +11,51 @@ where
 {
     /// Initialize sensor with settings from ST application note AN4545,
     /// section "SR03 settings" - "Mandatory : private registers"
-    pub(crate) fn init_hardware(&mut self) -> Result<(), Error<E>> {
+    pub(crate) fn init_hardware(&mut self) -> Result<(), E> {
         // Store part-to-part range offset so it can be adjusted if scaling is changed
         self.config.ptp_offset = self.read_named_register(SYSRANGE__PART_TO_PART_RANGE_OFFSET)?;
 
-        if self.read_named_register(SYSTEM__FRESH_OUT_OF_RESET)? == 0x01 {
-            let _scaling = 1;
+        self.write_register(0x207, 0x01)?;
+        self.write_register(0x208, 0x01)?;
+        self.write_register(0x096, 0x00)?;
+        self.write_register(0x097, 0xFD)?; // RANGE_SCALER = 253
+        self.write_register(0x0E3, 0x01)?;
+        self.write_register(0x0E4, 0x03)?;
+        self.write_register(0x0E5, 0x02)?;
+        self.write_register(0x0E6, 0x01)?;
+        self.write_register(0x0E7, 0x03)?;
+        self.write_register(0x0F5, 0x02)?;
+        self.write_register(0x0D9, 0x05)?;
+        self.write_register(0x0DB, 0xCE)?;
+        self.write_register(0x0DC, 0x03)?;
+        self.write_register(0x0DD, 0xF8)?;
+        self.write_register(0x09F, 0x00)?;
+        self.write_register(0x0A3, 0x3C)?;
+        self.write_register(0x0B7, 0x00)?;
+        self.write_register(0x0BB, 0x3C)?;
+        self.write_register(0x0B2, 0x09)?;
+        self.write_register(0x0CA, 0x09)?;
+        self.write_register(0x198, 0x01)?;
+        self.write_register(0x1B0, 0x17)?;
+        self.write_register(0x1AD, 0x00)?;
+        self.write_register(0x0FF, 0x05)?;
+        self.write_register(0x100, 0x05)?;
+        self.write_register(0x199, 0x05)?;
+        self.write_register(0x1A6, 0x1B)?;
+        self.write_register(0x1AC, 0x3E)?;
+        self.write_register(0x1A7, 0x1F)?;
+        self.write_register(0x030, 0x00)?;
 
-            self.write_register(0x207, 0x01)?;
-            self.write_register(0x208, 0x01)?;
-            self.write_register(0x096, 0x00)?;
-            self.write_register(0x097, 0xFD)?; // RANGE_SCALER = 253
-            self.write_register(0x0E3, 0x01)?;
-            self.write_register(0x0E4, 0x03)?;
-            self.write_register(0x0E5, 0x02)?;
-            self.write_register(0x0E6, 0x01)?;
-            self.write_register(0x0E7, 0x03)?;
-            self.write_register(0x0F5, 0x02)?;
-            self.write_register(0x0D9, 0x05)?;
-            self.write_register(0x0DB, 0xCE)?;
-            self.write_register(0x0DC, 0x03)?;
-            self.write_register(0x0DD, 0xF8)?;
-            self.write_register(0x09F, 0x00)?;
-            self.write_register(0x0A3, 0x3C)?;
-            self.write_register(0x0B7, 0x00)?;
-            self.write_register(0x0BB, 0x3C)?;
-            self.write_register(0x0B2, 0x09)?;
-            self.write_register(0x0CA, 0x09)?;
-            self.write_register(0x198, 0x01)?;
-            self.write_register(0x1B0, 0x17)?;
-            self.write_register(0x1AD, 0x00)?;
-            self.write_register(0x0FF, 0x05)?;
-            self.write_register(0x100, 0x05)?;
-            self.write_register(0x199, 0x05)?;
-            self.write_register(0x1A6, 0x1B)?;
-            self.write_register(0x1AC, 0x3E)?;
-            self.write_register(0x1A7, 0x1F)?;
-            self.write_register(0x030, 0x00)?;
+        self.write_named_register(SYSTEM__FRESH_OUT_OF_RESET, 0)?;
 
-            self.write_named_register(SYSTEM__FRESH_OUT_OF_RESET, 0)?;
+        self.set_configuration()?;
 
-            self.set_configuration()?;
-
-            Ok(())
-        } else {
-            // Sensor has already been initialized, so try to get scaling settings by
-            // reading registers.
-
-            let s: u16 = self.read_named_register_16bit(RANGE_SCALER)?;
-
-            if s == RANGE_SCALAR_CODE[3] {
-                self.config.range_scaling = 3;
-            } else if s == RANGE_SCALAR_CODE[2] {
-                self.config.range_scaling = 2;
-            } else {
-                self.config.range_scaling = 1;
-            }
-
-            // Adjust the part-to-part range offset value read earlier to account for
-            // existing scaling. If the sensor was already in 2x or 3x scaling mode,
-            // precision will be lost calculating the original (1x) offset, but this can
-            // be resolved by resetting the sensor and Arduino again.
-            self.config.ptp_offset *= self.config.range_scaling;
-            Ok(())
-        }
+        Ok(())
     }
 
     /// See VL6180X datasheet and application note to understand how the config
     /// values get transformed into the values the registers are set to.
-    fn set_configuration(&mut self) -> Result<(), Error<E>> {
+    fn set_configuration(&mut self) -> Result<(), E> {
         self.write_named_register(
             READOUT__AVERAGING_SAMPLE_PERIOD,
             self.config.readout_averaging_period_multiplier,
@@ -117,9 +93,7 @@ where
             range_inter_measurement_val,
         )?;
 
-        let interrupt_val =
-            self.config.range_interrupt_mode as u8 | self.config.ambient_interrupt_mode as u8;
-        self.write_named_register(SYSTEM__INTERRUPT_CONFIG_GPIO, interrupt_val)?;
+        self.set_interrupts()?;
 
         self.write_named_register(
             SYSRANGE__MAX_CONVERGENCE_TIME,
@@ -134,7 +108,23 @@ where
         Ok(())
     }
 
-    fn set_range_scaling(&mut self, new_scaling: u8) -> Result<(), Error<E>> {
+    fn set_interrupts(&mut self) -> Result<(), E> {
+        let interrupt_val =
+            self.config.range_interrupt_mode as u8 | self.config.ambient_interrupt_mode as u8;
+        if interrupt_val != 0x00 {
+            self.write_named_register(
+                SYSTEM__MODE_GPIO1,
+                SysModeGpio1Polarity::ActiveHigh as u8 | SysModeGpio1Select::InterruptOutput as u8,
+            )?;
+        } else {
+            self.write_named_register(
+                SYSTEM__MODE_GPIO1,
+                SysModeGpio1Polarity::ActiveHigh as u8 | SysModeGpio1Select::Off as u8,
+            )?;
+        }
+        self.write_named_register(SYSTEM__INTERRUPT_CONFIG_GPIO, interrupt_val)
+    }
+    fn set_range_scaling(&mut self, new_scaling: u8) -> Result<(), E> {
         const DEFAULT_CROSSTALK_VALID_HEIGHT: u8 = 20; // default value of SYSRANGE__CROSSTALK_VALID_HEIGHT
 
         let scaling = new_scaling;

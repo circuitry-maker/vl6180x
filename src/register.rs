@@ -89,6 +89,15 @@ pub enum Register32Bit {
     RESULT__RANGE_REFERENCE_CONV_TIME = 0x080,    // 32-bit
 }
 
+pub enum SysModeGpio1Polarity {
+    ActiveLow = 0b00_0_0000_0,
+    ActiveHigh = 0b00_1_0000_0,
+}
+pub enum SysModeGpio1Select {
+    Off = 0b00_0_0000_0,
+    InterruptOutput = 0b00_0_1000_0,
+}
+
 /// Sets the range mode and triggers start/stop.
 ///
 /// Bit 1: sysrange__mode_select: Device Mode select
@@ -111,9 +120,9 @@ pub enum SysRangeStartCode {
 /// int_clear_sig: Interrupt clear bits.
 /// Writing a 1 to each bit will clear the intended interrupt.
 pub enum SysInterruptClearCode {
-    ClearRangeInterrupt = 0b00000_001,
-    ClearAmbientInterrupt = 0b00000_010,
-    ClearErrorInterrupt = 0b00000_100,
+    Range = 0b00000_001,
+    Ambient = 0b00000_010,
+    Error = 0b00000_100,
 }
 
 /// Sets the ambient light mode and triggers start/stop.
@@ -141,6 +150,8 @@ pub enum InterleavedModeEnableCode {
 }
 
 /// Result interrupt status codes
+///
+/// Use [`has_status()`](#method.has_status) to check if the result returned from [`read_interrupt_status()`](crate::VL6180X::read_interrupt_status)
 /// Register: RESULT__INTERRUPT_STATUS_GPIO
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ResultInterruptStatusGpioCode {

@@ -47,34 +47,19 @@ where
         Ok(u32::from_be_bytes(data))
     }
 
-    // fn read_byte(&mut self, reg: u8) -> Result<u8, E> {
-    //     let mut data: [u8; 1] = [0];
-    //     // FIXME:
-    //     //  * device address is not a const
-    //     //  * register address is u16
-    //     self.com
-    //         .write_read(self.config.address, &[reg], &mut data)?;
-    //     Ok(data[0])
-    // }
+    pub(super) fn write_only_named_register(
+        &mut self,
+        reg: Register8Bit,
+        code: u8,
+    ) -> Result<(), E> {
+        self.write_only_register(reg as u16, code)
+    }
 
-    // fn read_6bytes(&mut self, reg: Register8Bit) -> Result<[u8; 6], E> {
-    //     let mut ret: [u8; 6] = Default::default();
-    //     self.read_registers(reg, &mut ret)?;
-
-    //     Ok(ret)
-    // }
-
-    // fn read_registers(&mut self, reg: Register8Bit, buffer: &mut [u8]) -> Result<(), E> {
-    //     // const I2C_AUTO_INCREMENT: u8 = 1 << 7;
-    //     const I2C_AUTO_INCREMENT: u8 = 0;
-    //     self.com.write_read(
-    //         self.config.address,
-    //         &[(reg as u8) | I2C_AUTO_INCREMENT],
-    //         buffer,
-    //     )?;
-
-    //     Ok(())
-    // }
+    pub(super) fn write_only_register(&mut self, reg: u16, code: u8) -> Result<(), E> {
+        let reg = reg.to_be_bytes();
+        let bytes: [u8; 3] = [reg[0], reg[1], code];
+        self.com.write(self.config.address, &bytes)
+    }
 
     pub(super) fn write_named_register(&mut self, reg: Register8Bit, code: u8) -> Result<(), E> {
         self.write_register(reg as u16, code)

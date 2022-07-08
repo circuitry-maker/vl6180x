@@ -1,16 +1,17 @@
-use crate::VL6180X;
 use crate::{error::Error, Config};
+use crate::{AllowCommunication, VL6180X};
 use embedded_hal::blocking::i2c::{Write, WriteRead};
-use embedded_hal::digital::v2::OutputPin;
 
 use super::{
     AllowReadMeasurement, AllowStartAmbientSingle, AllowStartRangeSingle, AmbientContinuousMode,
-    DynamicMode, InterleavedContinuousMode, PoweredOffMode, RangeContinuousMode,
+    DynamicMode, InterleavedContinuousMode, RangeContinuousMode,
 };
 /// Sensor has been configured and is ready to take single measurements or switch to a
 /// continuous measurement mode
 #[derive(Debug, Copy, Clone)]
 pub struct ReadyMode;
+
+impl AllowCommunication for ReadyMode {}
 
 impl AllowReadMeasurement for ReadyMode {}
 
@@ -94,14 +95,5 @@ where
         let mut new_vl6180x = self.into_mode(InterleavedContinuousMode {});
         new_vl6180x.enable_interleaved_continuous_direct()?;
         Ok(new_vl6180x)
-    }
-
-    /// Powers off the sensor by setting the `x_shutdown_pin` low.
-    pub fn power_off<P: OutputPin<Error = E>>(
-        self,
-        x_shutdown_pin: &mut P,
-    ) -> Result<VL6180X<PoweredOffMode, I2C>, Error<E>> {
-        self.power_off_direct(x_shutdown_pin)?;
-        Ok(self.into_mode(PoweredOffMode {}))
     }
 }

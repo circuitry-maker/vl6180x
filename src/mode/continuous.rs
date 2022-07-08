@@ -1,4 +1,4 @@
-use crate::{error::Error, VL6180X};
+use crate::{error::Error, AllowCommunication, VL6180X};
 use embedded_hal::blocking::i2c::{Write, WriteRead};
 
 use super::{AllowReadMeasurement, AllowStartAmbientSingle, AllowStartRangeSingle, ReadyMode};
@@ -10,6 +10,8 @@ pub struct RangeContinuousMode;
 impl AllowReadMeasurement for RangeContinuousMode {}
 
 impl AllowStartAmbientSingle for RangeContinuousMode {}
+
+impl AllowCommunication for RangeContinuousMode {}
 
 impl<I2C, E> VL6180X<RangeContinuousMode, I2C>
 where
@@ -30,6 +32,8 @@ impl AllowReadMeasurement for AmbientContinuousMode {}
 
 impl AllowStartRangeSingle for AmbientContinuousMode {}
 
+impl AllowCommunication for AmbientContinuousMode {}
+
 impl<I2C, E> VL6180X<AmbientContinuousMode, I2C>
 where
     I2C: WriteRead<Error = E> + Write<Error = E>,
@@ -46,6 +50,8 @@ where
 pub struct InterleavedContinuousMode {}
 
 impl AllowReadMeasurement for InterleavedContinuousMode {}
+
+impl AllowCommunication for InterleavedContinuousMode {}
 
 impl<I2C, E> VL6180X<InterleavedContinuousMode, I2C>
 where
