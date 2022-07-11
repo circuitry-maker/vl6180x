@@ -45,7 +45,10 @@ where
     }
 }
 
-/// Mode in which continuous range measurements are being taken by the sensor
+/// Mode in which continuous ambient and range measurements are being taken by the sensor.
+/// Ambient measurement is taken first, then immediately followed up by a range measurement
+/// and repeated after an interval specified by
+/// [`set_ambient_intermeasurement_period()`](crate::config::Config::set_ambient_inter_measurement_period)
 #[derive(Debug, Copy, Clone)]
 pub struct InterleavedContinuousMode {}
 

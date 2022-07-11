@@ -43,6 +43,27 @@ fn interupt_has_ambient_event() {
 }
 
 #[test]
+fn interupt_has_no_range_event() {
+    assert_eq!(
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoRangeEvents,
+            0b00_000_000
+        ),
+        true
+    )
+}
+#[test]
+fn interupt_has_range_event() {
+    assert_eq!(
+        ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoRangeEvents,
+            0b00_000_010
+        ),
+        false
+    )
+}
+
+#[test]
 fn interupt_has_ambient_high_event() {
     assert_eq!(
         ResultInterruptStatusGpioCode::has_status(

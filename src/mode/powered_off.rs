@@ -5,7 +5,7 @@ use embedded_hal::{
 
 use crate::{error::Error2, mode::ReadyMode, VL6180X};
 
-/// Sensor is powered off
+/// Mode in which the sensor is powered off.
 #[derive(Debug, Copy, Clone)]
 pub struct PoweredOffMode {}
 

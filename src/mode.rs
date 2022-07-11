@@ -58,7 +58,7 @@ where
         self.read_range_mm_direct()
     }
 
-    /// Blocking read of the range mesurement.
+    /// Blocking read of the ambient light mesurement.
     /// The reading (whether single or continuous) must already have been started.
     pub fn read_ambient_lux_blocking(&mut self) -> Result<f32, Error<E>> {
         self.read_ambient_lux_blocking_direct()
@@ -70,6 +70,19 @@ where
     pub fn read_ambient_lux(&mut self) -> Result<f32, Error<E>> {
         self.read_ambient_lux_direct()
     }
+
+    /// Blocking read of the raw ambient light mesurement.
+    /// The reading (whether single or continuous) must already have been started.
+    pub fn read_ambient_blocking(&mut self) -> Result<u16, Error<E>> {
+        self.read_ambient_blocking_direct()
+    }
+
+    /// Non-blocking read of the raw ambient light measurement.
+    /// The reading (whether single or continuous) must already have been started.
+    /// Returns [Error::ResultNotReady] if the result is not ready.
+    pub fn read_ambient(&mut self) -> Result<u16, Error<E>> {
+        self.read_ambient_direct()
+    }
 }
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
@@ -80,11 +93,13 @@ where
     /// Trigger ambient light measurement in a non-blocking way.
     ///
     /// Does not return the result. To get the measured value the host has the following options:
-    /// 1. Check regularly to see if the result is ready with [`read_ambient_lux`](#method.read_ambient_lux)
-    /// 2. Call [`read_ambient_lux_blocking`](#method.read_ambient_lux_blocking) to have the driver
+    /// 1. Check regularly to see if the result is ready with [`read_ambient_lux`](VL6180X::read_ambient_lux)
+    /// or [`read_ambient`](VL6180X::read_ambient)
+    /// 2. Call [`read_ambient_lux_blocking`](VL6180X::read_ambient_lux_blocking) or
+    /// [`read_ambient_blocking`](VL6180X::read_ambient_blocking) to have the driver
     /// perform the regular checks in a blocking way.
     /// 3. Wait for the ambient interrupt to be triggered, indicating that the
-    /// new sample is ready, then call [`read_ambient_lux`](#method.read_ambient_lux).
+    /// new sample is ready, then call the methods listed in option 1.
     pub fn start_ambient_single(&mut self) -> Result<(), Error<E>> {
         self.start_ambient_single_direct()?;
         Ok(())
@@ -99,11 +114,11 @@ where
     /// Trigger range mesurement in a non-blocking way.
     ///
     /// Does not return the result. To get the measured value the host has the following options:
-    /// 1. Check regularly to see if the result is ready with [`read_range`](#method.read_range)
-    /// 2. Call [`read_range_blocking`](#method.read_range_blocking) to have the driver
+    /// 1. Check regularly to see if the result is ready with [`read_range_mm()`](VL6180X::read_range_mm)
+    /// 2. Call [`read_range_mm_blocking()`](VL6180X::read_range_mm_blocking) to have the driver
     /// perform the regular checks in a blocking way.
     /// 3. Wait for the range interrupt to be triggered, indicating that the
-    /// new sample is ready, then call [`read_range`](#method.read_range).
+    /// new sample is ready, then call [`read_range_mm()`](VL6180X::read_range_mm).
     pub fn start_range_single(&mut self) -> Result<(), Error<E>> {
         self.start_range_single_direct()?;
         Ok(())
@@ -121,7 +136,8 @@ where
     }
 
     /// Read the current interrupt status of the sensor.
-    /// Can be multiple states of [ResultInterruptStatusGpioCode](crate::register::ResultInterruptStatusGpioCode)
+    /// Can be in multiple states of [ResultInterruptStatusGpioCode](crate::register::ResultInterruptStatusGpioCode) at once.
+    /// Use [ResultInterruptStatusGpioCode::has_status](crate::register::ResultInterruptStatusGpioCode::has_status) to look for particular states.
     pub fn read_interrupt_status(&mut self) -> Result<u8, Error<E>> {
         self.read_interrupt_status_direct()
     }
@@ -141,7 +157,7 @@ where
         self.clear_range_interrupt_direct()
     }
 
-    /// Clear error interrupt
+    /// Clear all interrupts (error, ambient and range)
     pub fn clear_all_interrupts(&mut self) -> Result<(), Error<E>> {
         self.clear_all_interrupts_direct()
     }

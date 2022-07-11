@@ -43,27 +43,27 @@ impl<I2C, E> VL6180X<DynamicMode, I2C>
 where
     I2C: WriteRead<Error = E> + Write<Error = E>,
 {
-    /// Same functionality as [`poll_range_single_blocking_mm()`](#method.poll_range_single_blocking_mm)
+    /// Same functionality as [`poll_range_mm_single_blocking()`](VL6180X::poll_range_mm_single_blocking)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready], otherwise returns [Error::InvalidMethod]
-    pub fn try_poll_range_single_blocking_mm(&mut self) -> Result<u16, Error<E>> {
+    pub fn try_poll_range_mm_single_blocking(&mut self) -> Result<u16, Error<E>> {
         if self.mode.operating_mode != Ready {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
-        self.poll_range_single_blocking_mm_direct()
+        self.poll_range_mm_single_blocking_direct()
     }
 
-    /// Same functionality as [`poll_ambient_single_blocking()`](#method.poll_ambient_single_blocking)
+    /// Same functionality as [`poll_ambient_lux_single_blocking()`](VL6180X::poll_ambient_lux_single_blocking)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready], otherwise returns [Error::InvalidMethod]
-    pub fn try_poll_ambient_single_blocking(&mut self) -> Result<f32, Error<E>> {
+    pub fn try_poll_ambient_lux_single_blocking(&mut self) -> Result<f32, Error<E>> {
         if self.mode.operating_mode != Ready {
             return Err(Error::InvalidMethod(self.mode.operating_mode));
         }
-        self.poll_ambient_single_blocking_direct()
+        self.poll_ambient_lux_single_blocking_direct()
     }
 
-    /// Same functionality as [`start_range_continuous_mode()`](#method.start_range_continuous_mode)
+    /// Same functionality as [`start_range_continuous_mode()`](VL6180X::start_range_continuous_mode)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready], otherwise returns [Error::InvalidMethod]
     pub fn try_start_range_continuous_mode(&mut self) -> Result<(), Error<E>> {
@@ -75,7 +75,7 @@ where
         Ok(())
     }
 
-    /// Same functionality as [`stop_range_continuous_mode()`](#method.stop_range_continuous_mode)
+    /// Same functionality as [`stop_range_continuous_mode()`](VL6180X::stop_range_continuous_mode)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [RangeContinuous], otherwise returns [Error::InvalidMethod]
     pub fn try_stop_range_continuous_mode(&mut self) -> Result<(), Error<E>> {
@@ -87,7 +87,7 @@ where
         Ok(())
     }
 
-    /// Same functionality as [`start_ambient_continuous_mode()`](#method.start_ambient_continuous_mode)
+    /// Same functionality as [`start_ambient_continuous_mode()`](VL6180X::start_ambient_continuous_mode)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready], otherwise returns [Error::InvalidMethod]
     pub fn try_start_ambient_continuous_mode(&mut self) -> Result<(), Error<E>> {
@@ -99,7 +99,7 @@ where
         Ok(())
     }
 
-    /// Same functionality as [`stop_ambient_continuous_mode()`](#method.stop_ambient_continuous_mode)
+    /// Same functionality as [`stop_ambient_continuous_mode()`](VL6180X::stop_ambient_continuous_mode)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [AmbientContinuous], otherwise returns [Error::InvalidMethod]
     pub fn try_stop_ambient_continuous_mode(&mut self) -> Result<(), Error<E>> {
@@ -111,7 +111,7 @@ where
         Ok(())
     }
 
-    /// Same functionality as [`start_interleaved_continuous_mode()`](#method.start_interleaved_continuous_mode)
+    /// Same functionality as [`start_interleaved_continuous_mode()`](VL6180X::start_interleaved_continuous_mode)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready], otherwise returns [Error::InvalidMethod]
     pub fn try_start_interleaved_continuous_mode(&mut self) -> Result<(), Error<E>> {
@@ -123,7 +123,7 @@ where
         Ok(())
     }
 
-    /// Same functionality as [`stop_interleaved_continuous_mode()`](#method.stop_interleaved_continuous_mode)
+    /// Same functionality as [`stop_interleaved_continuous_mode()`](VL6180X::stop_interleaved_continuous_mode)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [InterleavedContinuous], otherwise returns [Error::InvalidMethod]
     pub fn try_stop_interleaved_continuous_mode(&mut self) -> Result<(), Error<E>> {
@@ -135,7 +135,7 @@ where
         Ok(())
     }
 
-    /// Same functionality as [`start_range_single()`](#method.start_range_single)
+    /// Same functionality as [`start_range_single()`](VL6180X::start_range_single)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready] or [AmbientContinuous],
     /// otherwise returns [Error::InvalidMethod]
@@ -143,7 +143,7 @@ where
         self.start_range_single_direct()
     }
 
-    /// Same functionality as [`start_ambient_single()`](#method.start_ambient_single)
+    /// Same functionality as [`start_ambient_single()`](VL6180X::start_ambient_single)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [Ready] or [RangeContinuous],
     /// otherwise returns [Error::InvalidMethod]
@@ -151,7 +151,7 @@ where
         self.start_ambient_single_direct()
     }
 
-    /// Same functionality as [`read_range_mm_blocking()`](#method.read_range_mm_blocking)
+    /// Same functionality as [`read_range_mm_blocking()`](VL6180X::read_range_mm_blocking)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -162,7 +162,7 @@ where
         self.read_range_mm_blocking_direct()
     }
 
-    /// Same functionality as [`read_range_mm()`](#method.read_range_mm)
+    /// Same functionality as [`read_range_mm()`](VL6180X::read_range_mm)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -173,7 +173,7 @@ where
         self.read_range_mm_direct()
     }
 
-    /// Same functionality as [`read_ambient_lux_blocking()`](#method.read_ambient_lux_blocking)
+    /// Same functionality as [`read_ambient_lux_blocking()`](VL6180X::read_ambient_lux_blocking)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -184,7 +184,7 @@ where
         self.read_ambient_lux_blocking_direct()
     }
 
-    /// Same functionality as [`read_ambient_lux()`](#method.read_ambient_lux)
+    /// Same functionality as [`read_ambient_lux()`](VL6180X::read_ambient_lux)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -195,7 +195,29 @@ where
         self.read_ambient_lux_direct()
     }
 
-    /// Same functionality as [`clear_error_interrupt()`](#method.clear_error_interrupt)
+    /// Same functionality as [`read_ambient_blocking()`](VL6180X::read_ambient_blocking)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_read_ambient_blocking(&mut self) -> Result<u16, Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.read_ambient_blocking_direct()
+    }
+
+    /// Same functionality as [`read_ambient()`](VL6180X::read_ambient)
+    /// but with a check on the current [OperatingMode].
+    /// Valid in all OperatingModes except [PoweredOff],
+    /// in which case will return [Error::InvalidMethod]
+    pub fn try_read_ambient(&mut self) -> Result<u16, Error<E>> {
+        if self.mode.operating_mode == PoweredOff {
+            return Err(Error::InvalidMethod(self.mode.operating_mode));
+        }
+        self.read_ambient_direct()
+    }
+
+    /// Same functionality as [`clear_error_interrupt()`](VL6180X::clear_error_interrupt)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -206,7 +228,7 @@ where
         self.clear_error_interrupt_direct()
     }
 
-    /// Same functionality as [`clear_ambient_interrupt()`](#method.clear_ambient_interrupt)
+    /// Same functionality as [`clear_ambient_interrupt()`](VL6180X::clear_ambient_interrupt)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -217,7 +239,7 @@ where
         self.clear_ambient_interrupt_direct()
     }
 
-    /// Same functionality as [`clear_range_interrupt()`](#method.clear_range_interrupt)
+    /// Same functionality as [`clear_range_interrupt()`](VL6180X::clear_range_interrupt)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -228,7 +250,7 @@ where
         self.clear_range_interrupt_direct()
     }
 
-    /// Same functionality as [`clear_all_interrupts()`](#method.clear_all_interrupts)
+    /// Same functionality as [`clear_all_interrupts()`](VL6180X::clear_all_interrupts)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -239,7 +261,7 @@ where
         self.clear_all_interrupts_direct()
     }
 
-    /// Same functionality as [`change_i2c_address()`](#method.change_i2c_address)
+    /// Same functionality as [`change_i2c_address()`](VL6180X::change_i2c_address)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -250,7 +272,7 @@ where
         self.change_i2c_address_direct(new_address)
     }
 
-    /// Same functionality as [`power_off()`](#method.power_off)
+    /// Same functionality as [`power_off()`](VL6180X::power_off)
     /// but with a check on the current [OperatingMode].
     /// Valid in all OperatingModes except [PoweredOff],
     /// in which case will return [Error::InvalidMethod]
@@ -266,7 +288,7 @@ where
         Ok(())
     }
 
-    /// Same functionality as [`power_on_and_init()`](#method.power_on_and_init)
+    /// Same functionality as [`power_on_and_init()`](VL6180X::power_on_and_init)
     /// but with a check on the current [OperatingMode].
     /// Valid when OperatingMode is [PoweredOff],
     /// otherwise returns [Error::InvalidMethod]

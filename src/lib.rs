@@ -1,6 +1,66 @@
-#![no_std]
 //! Manages a new VL6180X, Time-of-Flight I2C laser-ranging module
+//! ## Examples
+//!
+//! for more examples please see [vl6180x_stm32f401_examples](https://github.com/shaoyuancc/vl6180x_stm32f401_examples)
+//!
+//! ```rust
+//! #![no_std]
+//! #![no_main]
+//!
+//! use cortex_m_rt::ExceptionFrame;
+//! use cortex_m_rt::{entry, exception};
+//! use cortex_m_semihosting::hprintln;
+//! use hal::{pac, prelude::*};
+//! use panic_semihosting as _;
+//! use stm32f4xx_hal as hal;
+//! use vl6180x;
+//!
+//! #[entry]
+//! fn main() -> ! {
+//!     if let (Some(dp), Some(_cp)) = (
+//!         pac::Peripherals::take(),
+//!         cortex_m::peripheral::Peripherals::take(),
+//!     ) {
+//!         let rcc = dp.RCC.constrain();
+//!         let clocks = rcc.cfgr.sysclk(48.MHz()).freeze();
+//!
+//!         let gpiob = dp.GPIOB.split();
+//!         let scl = gpiob
+//!             .pb8
+//!             .into_alternate()
+//!             .internal_pull_up(true)
+//!             .set_open_drain();
+//!         let sda = gpiob
+//!             .pb9
+//!             .into_alternate()
+//!             .internal_pull_up(true)
+//!             .set_open_drain();
+//!         let i2c = dp.I2C1.i2c((scl, sda), 400.kHz(), &clocks);
+//!
+//!         //! To create sensor with default configuration:
+//!         let mut tof = vl6180x::VL6180X::new(i2c).expect("vl");
+//!
+//!         loop {
+//!             match tof.poll_range_mm_single_blocking() {
+//!                 Ok(range) => hprintln!("Range Single Poll: {}mm", range).unwrap(),
+//!                 Err(e) => hprintln!("Error reading TOF sensor Single Poll! {:?}", e).unwrap(),
+//!             }
+//!         }
+//!     }
+//!     loop {}
+//! }
 
+//! #[exception]
+//! unsafe fn HardFault(ef: &ExceptionFrame) -> ! {
+//!     panic!("{:#?}", ef);
+//! }
+//! ```
+
+//! ## References
+//! [VL6180X datasheet](https://www.st.com/resource/en/datasheet/vl6180x.pdf) (Time-of-Flight I2C laser-ranging module)
+//! [ST application note AN4545](https://www.st.com/resource/en/application_note/an4545-vl6180x-basic-ranging-application-note-stmicroelectronics.pdf)
+
+#![no_std]
 #![deny(
     missing_docs,
     missing_debug_implementations,
@@ -18,14 +78,11 @@ use embedded_hal::blocking::i2c::{Write, WriteRead};
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 pub use error::Error;
 pub use mode::*;
-/// All configuration sdf
 mod config;
 mod device_status;
-/// The possible error values
 mod error;
 mod i2c_interface;
 mod init;
-/// Operating modes
 mod mode;
 mod read_measurements;
 mod register;
@@ -49,6 +106,6 @@ pub struct VL6180XwPins<MODE, I2C: Write + WriteRead, OP: OutputPin, IP: InputPi
     /// (Or the equivalent DynamicMode try methods) instead of
     /// manually setting the output of the pin.
     pub x_shutdown_pin: OP,
-    /// Interrupt pin
+    /// Interrupt pin for receiving interrupts from the sensor.
     pub interrupt_pin: IP,
 }

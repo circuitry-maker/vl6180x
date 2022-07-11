@@ -109,8 +109,12 @@ where
     }
 
     fn set_interrupts(&mut self) -> Result<(), E> {
+        // Set the interrupt mode
         let interrupt_val =
             self.config.range_interrupt_mode as u8 | self.config.ambient_interrupt_mode as u8;
+        self.write_named_register(SYSTEM__INTERRUPT_CONFIG_GPIO, interrupt_val)?;
+
+        // Enable or disable GPIO1 as interrupt output
         if interrupt_val != 0x00 {
             self.write_named_register(
                 SYSTEM__MODE_GPIO1,
@@ -122,7 +126,26 @@ where
                 SysModeGpio1Polarity::ActiveHigh as u8 | SysModeGpio1Select::Off as u8,
             )?;
         }
-        self.write_named_register(SYSTEM__INTERRUPT_CONFIG_GPIO, interrupt_val)
+
+        // Set the thresholds
+        self.write_named_register(
+            SYSRANGE__THRESH_HIGH,
+            self.config.range_high_interrupt_threshold,
+        )?;
+        self.write_named_register(
+            SYSRANGE__THRESH_LOW,
+            self.config.range_low_interrupt_threshold,
+        )?;
+        self.write_named_register_16bit(
+            SYSALS__THRESH_HIGH,
+            self.config.ambient_high_interrupt_threshold,
+        )?;
+        self.write_named_register_16bit(
+            SYSALS__THRESH_LOW,
+            self.config.ambient_low_interrupt_threshold,
+        )?;
+
+        Ok(())
     }
     fn set_range_scaling(&mut self, new_scaling: u8) -> Result<(), E> {
         const DEFAULT_CROSSTALK_VALID_HEIGHT: u8 = 20; // default value of SYSRANGE__CROSSTALK_VALID_HEIGHT

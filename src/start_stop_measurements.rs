@@ -9,7 +9,7 @@ impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
     I2C: WriteRead<Error = E> + Write<Error = E>,
 {
-    pub(crate) fn poll_range_single_blocking_mm_direct(&mut self) -> Result<u16, Error<E>> {
+    pub(crate) fn poll_range_mm_single_blocking_direct(&mut self) -> Result<u16, Error<E>> {
         self.write_named_register(
             Register8Bit::SYSRANGE__START,
             SysRangeStartCode::SingleStart as u8,
@@ -17,7 +17,7 @@ where
         self.read_range_mm_blocking_direct()
     }
 
-    pub(crate) fn poll_ambient_single_blocking_direct(&mut self) -> Result<f32, Error<E>> {
+    pub(crate) fn poll_ambient_lux_single_blocking_direct(&mut self) -> Result<f32, Error<E>> {
         self.write_named_register(
             Register8Bit::SYSALS__START,
             SysAmbientStartCode::SingleStart as u8,
@@ -56,10 +56,6 @@ where
     /// Enables continuous interleaved measurement.
     pub(crate) fn enable_interleaved_continuous_direct(&mut self) -> Result<(), Error<E>> {
         self.check_config_valid()?;
-        self.write_named_register(
-            Register8Bit::SYSALS__START,
-            SysAmbientStartCode::ContinuousStartOrStop as u8,
-        )?;
 
         self.write_named_register(
             Register8Bit::INTERLEAVED_MODE__ENABLE,
@@ -74,8 +70,8 @@ where
 
     /// For interleaved mode, the following equation must be satisfied:
     ///
-    /// ([range_max_convergence_time](#method.set_range_max_convergence_time) + 5) +
-    /// ([ambient_integration_period](#method.set_ambient_integration_period) * 1.1)
+    /// ([range_max_convergence_time](Config::set_range_max_convergence_time) + 5) +
+    /// ([ambient_integration_period](Config::set_ambient_integration_period) * 1.1)
     /// ≤ `ambient_inter_measurement_period` * 0.9
     ///
     /// The interleaved requirement is only checked when the interleaved mode is started.

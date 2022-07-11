@@ -16,8 +16,8 @@ where
 {
     pub(crate) fn read_range_mm_blocking_direct(&mut self) -> Result<u16, Error<E>> {
         let mut c = 0;
-        while !ResultInterruptStatusGpioCode::has_status(
-            ResultInterruptStatusGpioCode::NewSampleReadyRangeEvent,
+        while ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoRangeEvents,
             self.read_named_register(Register8Bit::RESULT__INTERRUPT_STATUS_GPIO)?,
         ) {
             c += 1;
@@ -30,9 +30,11 @@ where
     }
 
     pub(crate) fn read_range_mm_direct(&mut self) -> Result<u16, Error<E>> {
-        if !ResultInterruptStatusGpioCode::has_status(
-            ResultInterruptStatusGpioCode::NewSampleReadyRangeEvent,
-            self.read_named_register(Register8Bit::RESULT__INTERRUPT_STATUS_GPIO)?,
+        let interrupt_status =
+            self.read_named_register(Register8Bit::RESULT__INTERRUPT_STATUS_GPIO)?;
+        if ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoRangeEvents,
+            interrupt_status,
         ) {
             return Err(Error::ResultNotReady);
         }
@@ -57,8 +59,34 @@ where
 
     pub(crate) fn read_ambient_lux_blocking_direct(&mut self) -> Result<f32, Error<E>> {
         let mut c = 0;
-        while !ResultInterruptStatusGpioCode::has_status(
-            ResultInterruptStatusGpioCode::NewSampleReadyAmbientEvent,
+        while ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoAmbientEvents,
+            self.read_named_register(Register8Bit::RESULT__INTERRUPT_STATUS_GPIO)?,
+        ) {
+            c += 1;
+            if c == self.config.poll_max_loop {
+                return Err(Error::Timeout);
+            }
+        }
+        let raw_ambient = self.get_ambient_val_and_status()?;
+        Ok(self.convert_raw_ambient_to_lux(raw_ambient))
+    }
+
+    pub(crate) fn read_ambient_lux_direct(&mut self) -> Result<f32, Error<E>> {
+        if ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoAmbientEvents,
+            self.read_named_register(Register8Bit::RESULT__INTERRUPT_STATUS_GPIO)?,
+        ) {
+            return Err(Error::ResultNotReady);
+        }
+        let raw_ambient = self.get_ambient_val_and_status()?;
+        Ok(self.convert_raw_ambient_to_lux(raw_ambient))
+    }
+
+    pub(crate) fn read_ambient_blocking_direct(&mut self) -> Result<u16, Error<E>> {
+        let mut c = 0;
+        while ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoAmbientEvents,
             self.read_named_register(Register8Bit::RESULT__INTERRUPT_STATUS_GPIO)?,
         ) {
             c += 1;
@@ -69,9 +97,9 @@ where
         self.get_ambient_val_and_status()
     }
 
-    pub(crate) fn read_ambient_lux_direct(&mut self) -> Result<f32, Error<E>> {
-        if !ResultInterruptStatusGpioCode::has_status(
-            ResultInterruptStatusGpioCode::NewSampleReadyAmbientEvent,
+    pub(crate) fn read_ambient_direct(&mut self) -> Result<u16, Error<E>> {
+        if ResultInterruptStatusGpioCode::has_status(
+            ResultInterruptStatusGpioCode::NoAmbientEvents,
             self.read_named_register(Register8Bit::RESULT__INTERRUPT_STATUS_GPIO)?,
         ) {
             return Err(Error::ResultNotReady);
@@ -79,7 +107,7 @@ where
         self.get_ambient_val_and_status()
     }
 
-    fn get_ambient_val_and_status(&mut self) -> Result<f32, Error<E>> {
+    fn get_ambient_val_and_status(&mut self) -> Result<u16, Error<E>> {
         let status = self.read_named_register(Register8Bit::RESULT__ALS_STATUS)?;
         self.clear_ambient_interrupt_direct()?;
         let error = AmbientStatusErrorCode::try_from(status)
@@ -88,7 +116,7 @@ where
             return Err(Error::AmbientStatusError(error));
         }
         let raw_ambient = self.read_named_register_16bit(Register16Bit::RESULT__ALS_VAL)?;
-        Ok(self.convert_raw_ambient_to_lux(raw_ambient))
+        Ok(raw_ambient)
     }
 
     fn convert_raw_ambient_to_lux(&self, raw_ambient: u16) -> f32 {

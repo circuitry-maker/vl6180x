@@ -36,8 +36,6 @@ pub enum Register8Bit {
     SYSRANGE__VHV_REPEAT_RATE = 0x031,
 
     SYSALS__START = 0x038,
-    SYSALS__THRESH_HIGH = 0x03A,
-    SYSALS__THRESH_LOW = 0x03C,
     SYSALS__INTERMEASUREMENT_PERIOD = 0x03E,
     SYSALS__ANALOGUE_GAIN = 0x03F,
 
@@ -63,6 +61,8 @@ pub enum Register16Bit {
     SYSRANGE__RANGE_IGNORE_THRESHOLD = 0x026,      // 16-bit
 
     SYSALS__INTEGRATION_PERIOD = 0x040, // 16-Bit
+    SYSALS__THRESH_HIGH = 0x03A,        // 16-Bit
+    SYSALS__THRESH_LOW = 0x03C,         // 16-Bit
 
     RESULT__ALS_VAL = 0x050,              // 16-bit
     RESULT__HISTORY_BUFFER_0 = 0x052,     // 16-bit
@@ -151,7 +151,7 @@ pub enum InterleavedModeEnableCode {
 
 /// Result interrupt status codes
 ///
-/// Use [`has_status()`](#method.has_status) to check if the result returned from [`read_interrupt_status()`](crate::VL6180X::read_interrupt_status)
+/// Use [`has_status()`](ResultInterruptStatusGpioCode::has_status) to check if the result returned from [`read_interrupt_status()`](crate::VL6180X::read_interrupt_status)
 /// Register: RESULT__INTERRUPT_STATUS_GPIO
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ResultInterruptStatusGpioCode {

@@ -6,7 +6,7 @@ mod config_tests;
 /// Options for configuring the interrupt trigger condition for ambient measurement.
 #[derive(Debug, Clone, Copy)]
 pub enum AmbientInterruptMode {
-    /// No interrupts will be triggered (Default)
+    /// No interrupts will be triggered
     Disabled = 0,
     /// Interrupt triggered when value < thresh_low
     LevelLow = 0b00_001_000,
@@ -14,7 +14,7 @@ pub enum AmbientInterruptMode {
     LevelHigh = 0b00_010_000,
     /// Interrupt triggered when value < thresh_low OR value > thresh_high
     OutOfWindow = 0b00_011_000,
-    /// Interrupt triggered when new sample is ready
+    /// Interrupt triggered when new sample is ready (Default)
     NewSampleReady = 0b00_100_000,
 }
 
@@ -29,17 +29,13 @@ pub enum RangeInterruptMode {
     LevelHigh = 0b00_000_010,
     /// Interrupt triggered when value < thresh_low OR value > thresh_high
     OutOfWindow = 0b00_000_011,
-    /// Interrupt triggered when new sample is ready
+    /// Interrupt triggered when new sample is ready (Default)
     NewSampleReady = 0b00_000_100,
 }
 
 /// Config information for the driver.
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
-    // Unused
-    pub(super) io_mode2v8: bool,
-    pub(super) stop_variable: u8,
-    pub(super) measurement_timing_budget_microseconds: u32,
     pub(super) ptp_offset: u8,
 
     pub(super) address: u8,
@@ -73,9 +69,6 @@ impl Config {
     /// Defaults are based on values from [ST application note AN4545](https://www.st.com/resource/en/application_note/an4545-vl6180x-basic-ranging-application-note-stmicroelectronics.pdf)
     pub fn new() -> Self {
         Config {
-            io_mode2v8: true,
-            stop_variable: 0,
-            measurement_timing_budget_microseconds: 0,
             address: 0x29,
             ptp_offset: 0,
             poll_max_loop: 500,
@@ -90,17 +83,18 @@ impl Config {
             range_inter_measurement_period: 100,
             range_vhv_recalibration_rate: 255,
 
-            ambient_analogue_gain_level: 6,
+            ambient_analogue_gain_level: 0,
             ambient_integration_period: 100,
             ambient_inter_measurement_period: 500,
 
             // Interrupt modes
-            range_interrupt_mode: RangeInterruptMode::Disabled,
-            ambient_interrupt_mode: AmbientInterruptMode::Disabled,
+            range_interrupt_mode: RangeInterruptMode::NewSampleReady,
+            ambient_interrupt_mode: AmbientInterruptMode::NewSampleReady,
             range_low_interrupt_threshold: 0,
             range_high_interrupt_threshold: 0xFF,
             ambient_low_interrupt_threshold: 0,
             ambient_high_interrupt_threshold: 0xFFFF,
+            // Implement in the future
             // TODO: range_ignore
             // TODO: ambient_lux_resolution_factor
         }
@@ -130,7 +124,7 @@ impl Config {
     /// Set the period between each range measurement in continuous mode.
     ///
     /// Min = whichever is larger: 10ms OR the smallest value that satisfies the following equation:
-    /// [range_max_convergence_time](#method.set_range_max_convergence_time) + 5
+    /// [range_max_convergence_time](Config::set_range_max_convergence_time) + 5
     /// ≤ `range_inter_measurement_period` * 0.9
     ///
     /// Max = 2550ms; Default = 100ms;
@@ -155,12 +149,8 @@ impl Config {
     ///
     /// Default = 48 which will give a sampling period of 4.4ms.
     /// Lower settings will result in increased noise.
-    pub fn set_readout_averaging_period_multiplier(
-        &mut self,
-        time_ms: u8,
-    ) -> Result<(), Error<u8>> {
+    pub fn set_readout_averaging_period_multiplier(&mut self, time_ms: u8) {
         self.readout_averaging_period_multiplier = time_ms;
-        Ok(())
     }
 
     /// Set the range Very High Voltage (VHV) recalibration rate.
@@ -249,15 +239,15 @@ impl Config {
     /// Set the period between each ambient measurement in continuous mode.
     ///
     /// Min = whichever is larger: 10ms OR the smallest value that satisfies the following equation:
-    /// [ambient_integration_period](#method.set_ambient_integration_period) * 1.1
+    /// [ambient_integration_period](Config::set_ambient_integration_period) * 1.1
     /// ≤ `ambient_inter_measurement_period` * 0.9
     ///
     /// Max = 2550ms; Default = 500ms; Value must be a multiple of 10ms.
     ///
     /// Note: for interleaved mode, the following equation must be satisfied:
     ///
-    /// ([range_max_convergence_time](#method.set_range_max_convergence_time) + 5) +
-    /// ([ambient_integration_period](#method.set_ambient_integration_period) * 1.1)
+    /// ([range_max_convergence_time](Config::set_range_max_convergence_time) + 5) +
+    /// ([ambient_integration_period](Config::set_ambient_integration_period) * 1.1)
     /// ≤ `ambient_inter_measurement_period` * 0.9
     ///
     /// The interleaved requirement is only checked when the interleaved mode is started.
@@ -267,7 +257,7 @@ impl Config {
         if time_ms % 10 != 0 || time_ms < min || time_ms > 2560 {
             return Err(Error::InvalidConfigurationValue(time_ms));
         }
-        self.range_inter_measurement_period = time_ms;
+        self.ambient_inter_measurement_period = time_ms;
         Ok(())
     }
 
@@ -290,7 +280,7 @@ impl Config {
     ///
     /// Default = 0;
     ///
-    /// Note: This value will be multiplied by the [range_result_scaler](#method.set_range_result_scaler) used
+    /// Note: This value will be multiplied by the [range_result_scaler](Config::set_range_result_scaler) used
     pub fn set_range_low_interrupt_threshold(&mut self, threshold: u8) {
         self.range_low_interrupt_threshold = threshold;
     }
@@ -299,7 +289,7 @@ impl Config {
     ///
     /// Default = 255;
     ///
-    /// Note: This value will be multiplied by the [range_result_scaler](#method.set_range_result_scaler) used
+    /// Note: This value will be multiplied by the [range_result_scaler](Config::set_range_result_scaler) used
     pub fn set_range_high_interrupt_threshold(&mut self, threshold: u8) {
         self.range_high_interrupt_threshold = threshold;
     }
@@ -324,7 +314,7 @@ impl Config {
     /// Default = 0x0;
     ///
     /// Note: Threshold is in raw device value not lux.
-    /// This value will be multiplied by the [ambient_result_scaler](#method.set_ambient_result_scaler) used
+    /// This value will be multiplied by the [ambient_result_scaler](Config::set_ambient_result_scaler) used
     pub fn set_ambient_low_interrupt_threshold(&mut self, threshold: u16) {
         self.ambient_low_interrupt_threshold = threshold;
     }
@@ -334,9 +324,9 @@ impl Config {
     /// Default = 0xFFFF;
     ///
     /// Note: Threshold is in raw device value not lux.
-    /// This value will be multiplied by the [ambient_result_scaler](#method.set_ambient_result_scaler) used
+    /// This value will be multiplied by the [ambient_result_scaler](Config::set_ambient_result_scaler) used
     pub fn set_ambient_high_interrupt_threshold(&mut self, threshold: u16) {
-        self.ambient_low_interrupt_threshold = threshold;
+        self.ambient_high_interrupt_threshold = threshold;
     }
 
     /// Set the i2c address for the initial connection

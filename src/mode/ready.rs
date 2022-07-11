@@ -36,8 +36,13 @@ where
             com: i2c,
             config: config.clone(),
         };
-        chip.init_hardware()?;
-        Ok(chip)
+        let chip_id = chip.read_model_id_direct()?;
+        if chip_id == 0xB4 {
+            chip.init_hardware()?;
+            Ok(chip)
+        } else {
+            Err(Error::InvalidDevice(chip_id))
+        }
     }
 
     /// Make VL6180X dynamic
@@ -52,17 +57,17 @@ where
     }
 
     /// Poll the sensor for a single range measurement.
-    /// Starts a single range measurement then calls [`read_range_blocking`](#method.read_range_blocking)
+    /// Starts a single range measurement then calls [`read_range_mm_blocking`](VL6180X::read_range_mm_blocking)
     /// to wait for the result.
-    pub fn poll_range_single_blocking_mm(&mut self) -> Result<u16, Error<E>> {
-        self.poll_range_single_blocking_mm_direct()
+    pub fn poll_range_mm_single_blocking(&mut self) -> Result<u16, Error<E>> {
+        self.poll_range_mm_single_blocking_direct()
     }
 
     /// Poll the sensor for a single ambient light measurement.
-    /// Starts a single ambient measurement then calls [`read_ambient_lux_blocking`](#method.read_ambient_lux_blocking)
+    /// Starts a single ambient measurement then calls [`read_ambient_lux_blocking`](VL6180X::read_ambient_lux_blocking)
     /// to wait for the result.
-    pub fn poll_ambient_single_blocking(&mut self) -> Result<f32, Error<E>> {
-        self.poll_ambient_single_blocking_direct()
+    pub fn poll_ambient_lux_single_blocking(&mut self) -> Result<f32, Error<E>> {
+        self.poll_ambient_lux_single_blocking_direct()
     }
 
     /// Starts continuous operation mode for reading range measurements.

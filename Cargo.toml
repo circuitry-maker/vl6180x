@@ -1,8 +1,8 @@
 [package]
 name = "vl6180x"
-version = "0.1.4"
+version = "0.2.0"
 description = "A rust driver for the VL6180X (Time-of-Flight I2C laser-ranging module)"
-authors = ["Luca Zulian <lucagiuggia@gmail.com>"]
+authors = ["Luca Zulian <lucagiuggia@gmail.com>", "Shao Yuan <flossy_lineage.0b@icloud.com>"]
 categories = ["embedded", "hardware-support", "no-std"]
 keywords = ["hal", "IO",  "embedded-hal-driver", "vl6180x", "tof"]
 license = "MIT"
