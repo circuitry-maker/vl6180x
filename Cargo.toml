@@ -1,22 +1,21 @@
 [package]
 name = "vl6180x"
-version = "0.1.4"
+version = "0.2.0"
 description = "A rust driver for the VL6180X (Time-of-Flight I2C laser-ranging module)"
-authors = ["Luca Zulian <lucagiuggia@gmail.com>"]
+authors = ["Luca Zulian <lucagiuggia@gmail.com>", "Shao Yuan <flossy_lineage.0b@icloud.com>"]
 categories = ["embedded", "hardware-support", "no-std"]
-keywords = ["hal", "IO"]
+keywords = ["hal", "IO",  "embedded-hal-driver", "vl6180x", "tof"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/lucazulian/vl6180x"
 edition = "2018"
-exclude = []
+exclude = [ "doc", "*.jpg", "*.png", "*.bmp" ]
 
 [dependencies]
-embedded-hal = "0.2.3"
-generic-array = "0.14.4"
-nb = "1.0.0"
+embedded-hal = {version = "0.2.7", features = ["unproven"]}
+int-enum = {version = "0.4.0", default-features = false}
 
-[dependencies.cast]
-default-features = false
-version = "0.3.0"
-uninit = "0.1.0"
+[profile.release]
+codegen-units = 1
+debug = true
+lto = true
