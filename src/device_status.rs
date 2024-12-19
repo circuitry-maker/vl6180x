@@ -3,14 +3,11 @@ use crate::{
     error::{Error, Error2},
     register::{Register8Bit::*, SysInterruptClearCode},
 };
-use embedded_hal::{
-    blocking::i2c::{Write, WriteRead},
-    digital::v2::OutputPin,
-};
+use embedded_hal::{digital::OutputPin, i2c::I2c};
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     pub(crate) fn read_model_id_direct(&mut self) -> Result<u8, Error<E>> {
         let id = self.read_named_register(IDENTIFICATION__MODEL_ID)?;

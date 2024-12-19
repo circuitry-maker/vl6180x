@@ -1,4 +1,5 @@
 use super::*;
+use core::convert::TryFrom;
 
 #[test]
 fn interupt_has_error() {
@@ -88,12 +89,12 @@ fn interupt_has_ambient_low_event() {
 #[test]
 fn range_status_error_code_known() {
     assert_eq!(
-        RangeStatusErrorCode::try_from(0b0110_0000).unwrap(),
+        RangeStatusErrorCode::try_from(0b0110_0000 >> 4 as u8).unwrap(),
         RangeStatusErrorCode::EarlyConvergenceEstimate
     )
 }
 
 #[test]
 fn range_status_error_code_unknown() {
-    assert!(RangeStatusErrorCode::try_from(0b1001_0000).is_err())
+    assert!(RangeStatusErrorCode::try_from(0b1001_0000 >> 4).is_err())
 }

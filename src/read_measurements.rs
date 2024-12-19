@@ -8,11 +8,11 @@ use crate::{
     },
     VL6180X,
 };
-use embedded_hal::blocking::i2c::{Write, WriteRead};
+use embedded_hal::i2c::I2c;
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     pub(crate) fn read_range_mm_blocking_direct(&mut self) -> Result<u16, Error<E>> {
         let mut c = 0;
@@ -42,7 +42,7 @@ where
     }
 
     fn get_range_val_and_status(&mut self) -> Result<u16, Error<E>> {
-        let status = self.read_named_register(Register8Bit::RESULT__RANGE_STATUS)?;
+        let status = self.read_named_register(Register8Bit::RESULT__RANGE_STATUS)? >> 4;
         self.clear_range_interrupt_direct()?;
         let error = RangeStatusErrorCode::try_from(status)
             .map_err(|_| Error::UnknownRegisterCode(status))?;
@@ -108,7 +108,7 @@ where
     }
 
     fn get_ambient_val_and_status(&mut self) -> Result<u16, Error<E>> {
-        let status = self.read_named_register(Register8Bit::RESULT__ALS_STATUS)?;
+        let status = self.read_named_register(Register8Bit::RESULT__ALS_STATUS)? >> 4;
         self.clear_ambient_interrupt_direct()?;
         let error = AmbientStatusErrorCode::try_from(status)
             .map_err(|_| Error::UnknownRegisterCode(status))?;

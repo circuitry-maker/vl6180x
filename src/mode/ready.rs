@@ -1,6 +1,6 @@
 use crate::{error::Error, Config};
 use crate::{AllowCommunication, VL6180X};
-use embedded_hal::blocking::i2c::{Write, WriteRead};
+use embedded_hal::i2c::I2c;
 
 use super::{
     AllowReadMeasurement, AllowStartAmbientSingle, AllowStartRangeSingle, AmbientContinuousMode,
@@ -21,7 +21,7 @@ impl AllowStartAmbientSingle for ReadyMode {}
 
 impl<I2C, E> VL6180X<ReadyMode, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     /// Create a new VL6180X driver
     pub fn new(i2c: I2C) -> Result<Self, Error<E>> {

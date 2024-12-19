@@ -3,11 +3,11 @@ use crate::register::{
     Register16Bit::*, Register8Bit::*, SysModeGpio1Polarity, SysModeGpio1Select,
     AMBIENT_ANALOGUE_GAIN_CODE, RANGE_SCALAR_CODE,
 };
-use embedded_hal::blocking::i2c::{Write, WriteRead};
+use embedded_hal::i2c::I2c;
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     /// Initialize sensor with settings from ST application note AN4545,
     /// section "SR03 settings" - "Mandatory : private registers"
