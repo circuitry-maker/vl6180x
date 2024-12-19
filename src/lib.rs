@@ -3,7 +3,7 @@
 //!
 //! for more examples please see [vl6180x_stm32f401_examples](https://github.com/shaoyuancc/vl6180x_stm32f401_examples)
 //!
-//! ```rust
+//! ```ignore
 //! #![no_std]
 //! #![no_main]
 //!

@@ -11,6 +11,7 @@ fn interupt_has_error() {
         false
     )
 }
+
 #[test]
 fn interupt_has_no_error() {
     assert_eq!(
