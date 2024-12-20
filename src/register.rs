@@ -1,5 +1,4 @@
-use core::convert::TryFrom;
-use int_enum::{IntEnum, IntEnumError};
+use int_enum::IntEnum;
 
 #[cfg(test)]
 mod register_tests;
@@ -246,13 +245,6 @@ impl RangeStatusErrorCode {
     }
 }
 
-impl TryFrom<u8> for RangeStatusErrorCode {
-    type Error = IntEnumError<Self>;
-    fn try_from(code: u8) -> Result<Self, Self::Error> {
-        RangeStatusErrorCode::from_int(code >> 4)
-    }
-}
-
 /// Errors from performing an ambient light measurement
 /// See VL6180X datasheet section 6.2.38 RESULT__ALS_STATUS
 // Bits 7:4 of what is returned from the register
@@ -273,12 +265,6 @@ impl AmbientStatusErrorCode {
     }
 }
 
-impl TryFrom<u8> for AmbientStatusErrorCode {
-    type Error = IntEnumError<Self>;
-    fn try_from(code: u8) -> Result<Self, Self::Error> {
-        AmbientStatusErrorCode::from_int(code >> 4)
-    }
-}
 // RANGE_SCALER values for 1x, 2x, 3x scaling - see STSW-IMG003 core/src/vl6180x_api.c (ScalerLookUP[])
 pub const RANGE_SCALAR_CODE: [u16; 4] = [0, 253, 127, 84];
 /// See datasheet 2.10.6 for more details

@@ -3,7 +3,7 @@ use crate::register::{Register16Bit, Register8Bit};
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     /// Reads a named 8-bit register
     pub(crate) fn read_named_register(&mut self, reg: Register8Bit) -> Result<u8, E> {

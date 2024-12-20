@@ -5,8 +5,8 @@ mod ready;
 
 pub use continuous::*;
 pub use dynamic::*;
-use embedded_hal::blocking::i2c::{Write, WriteRead};
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::digital::OutputPin;
+use embedded_hal::i2c::I2c;
 pub use powered_off::*;
 pub use ready::*;
 
@@ -15,7 +15,7 @@ use crate::VL6180X;
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     fn into_mode<MODE2>(self, mode: MODE2) -> VL6180X<MODE2, I2C> {
         VL6180X {
@@ -42,7 +42,7 @@ pub trait AllowStartRangeSingle {}
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
     MODE: AllowReadMeasurement,
 {
     /// Blocking read of the range mesurement.
@@ -87,7 +87,7 @@ where
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
     MODE: AllowStartAmbientSingle,
 {
     /// Trigger ambient light measurement in a non-blocking way.
@@ -108,7 +108,7 @@ where
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
     MODE: AllowStartRangeSingle,
 {
     /// Trigger range mesurement in a non-blocking way.
@@ -127,7 +127,7 @@ where
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
     MODE: AllowCommunication,
 {
     /// Read the model id of the sensor. Should return 0xB4.

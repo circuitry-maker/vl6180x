@@ -29,4 +29,3 @@ fn set_range_max_convergence_time_value_valid() {
     let mut config = Config::new();
     assert_eq!(config.set_range_max_convergence_time(20), Ok(()))
 }
-

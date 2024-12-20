@@ -3,11 +3,11 @@ use crate::{
     register::{InterleavedModeEnableCode, Register8Bit, SysAmbientStartCode, SysRangeStartCode},
     VL6180X,
 };
-use embedded_hal::blocking::i2c::{Write, WriteRead};
+use embedded_hal::i2c::I2c;
 
 impl<MODE, I2C, E> VL6180X<MODE, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     pub(crate) fn poll_range_mm_single_blocking_direct(&mut self) -> Result<u16, Error<E>> {
         self.write_named_register(

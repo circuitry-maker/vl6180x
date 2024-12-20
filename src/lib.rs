@@ -3,7 +3,7 @@
 //!
 //! for more examples please see [vl6180x_stm32f401_examples](https://github.com/shaoyuancc/vl6180x_stm32f401_examples)
 //!
-//! ```rust
+//! ```ignore
 //! #![no_std]
 //! #![no_main]
 //!
@@ -37,7 +37,7 @@
 //!             .set_open_drain();
 //!         let i2c = dp.I2C1.i2c((scl, sda), 400.kHz(), &clocks);
 //!
-//!         //! To create sensor with default configuration:
+//!         // To create sensor with default configuration:
 //!         let mut tof = vl6180x::VL6180X::new(i2c).expect("vl");
 //!
 //!         loop {
@@ -74,8 +74,8 @@
 #![allow(dead_code)]
 pub use crate::register::ResultInterruptStatusGpioCode;
 pub use config::*;
-use embedded_hal::blocking::i2c::{Write, WriteRead};
-use embedded_hal::digital::v2::{InputPin, OutputPin};
+use embedded_hal::digital::{InputPin, OutputPin};
+use embedded_hal::i2c::I2c;
 pub use error::Error;
 pub use mode::*;
 mod config;
@@ -90,7 +90,7 @@ mod start_stop_measurements;
 
 /// VL6180 interface
 #[derive(Debug, Clone, Copy)]
-pub struct VL6180X<MODE, I2C: Write + WriteRead> {
+pub struct VL6180X<MODE, I2C: I2c> {
     mode: MODE,
     com: I2C,
     config: Config,
@@ -98,7 +98,7 @@ pub struct VL6180X<MODE, I2C: Write + WriteRead> {
 
 /// Convenience container for VL6180, x_shutdown_pin and interrupt_pin
 #[derive(Debug, Clone, Copy)]
-pub struct VL6180XwPins<MODE, I2C: Write + WriteRead, OP: OutputPin, IP: InputPin> {
+pub struct VL6180XwPins<MODE, I2C: I2c, OP: OutputPin, IP: InputPin> {
     /// VL6180
     pub vl6180x: VL6180X<MODE, I2C>,
     /// X Shutdown Pin, output high => powered on, output low => powered off.

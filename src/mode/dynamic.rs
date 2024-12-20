@@ -1,9 +1,6 @@
 use crate::error::{Error, Error2};
 use crate::VL6180X;
-use embedded_hal::{
-    blocking::i2c::{Write, WriteRead},
-    digital::v2::OutputPin,
-};
+use embedded_hal::{digital::OutputPin, i2c::I2c};
 use OperatingMode::*;
 
 /// A mode where the state is kept track of at runtime, instead of being
@@ -41,7 +38,7 @@ impl DynamicMode {
 
 impl<I2C, E> VL6180X<DynamicMode, I2C>
 where
-    I2C: WriteRead<Error = E> + Write<Error = E>,
+    I2C: I2c<Error = E>,
 {
     /// Same functionality as [`poll_range_mm_single_blocking()`](VL6180X::poll_range_mm_single_blocking)
     /// but with a check on the current [OperatingMode].
